@@ -8,4 +8,11 @@ edition = "2018"
 
 [dependencies]
 core = { path = "../../core" }
-rusqlite = "0.20.0"
+orm = { path = "../../orm" }
+chrono = "0.4.7"
+
+[dependencies.rusqlite]
+version = "0.20.0"
+default-features = false
+
+features = ["chrono", "bundled"]

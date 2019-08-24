@@ -4,4 +4,6 @@ members = [
   "core",
   "cmd",
   "storage/sqlite",
+  "orm",
+  "orm/orm_derive",
 ]
