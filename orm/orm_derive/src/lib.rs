@@ -18,7 +18,7 @@ fn impl_identifiers(ast: &syn::DeriveInput) -> TokenStream {
 
     let methods = match &ast.data {
         syn::Data::Struct(s) => {
-            get_identifiers_methods(&s.fields)
+            get_identifiers_methods(&s.fields, vis)
         }
         _ => unreachable!(),
     };
@@ -27,27 +27,22 @@ fn impl_identifiers(ast: &syn::DeriveInput) -> TokenStream {
 
         #vis struct #struct_name {}
 
-        impl #struct_name {
-            #(#methods)*
-        }
-
         impl #name {
-            #vis fn idents() -> #struct_name {
-                #struct_name{}
-            }
+            #(#methods)*
         }
     };
     gen.into()
 }
 
-fn get_identifiers_methods(fields: &syn::Fields) -> Vec<proc_macro2::TokenStream> {
+fn get_identifiers_methods(fields: &syn::Fields, vis: &syn::Visibility) -> Vec<proc_macro2::TokenStream> {
     let mut res = Vec::new();
     for field in fields.iter() {
         if let syn::Visibility::Public(_) = field.vis {
             if let Some(ident) = &field.ident {
+                let fun_name = format_ident!("{}_n", ident);
                 let quote_ident = format!("{}", ident);
                 let fun = quote! {
-                    pub fn #ident(&self) -> String {
+                    #vis fn #fun_name() -> String {
                         String::from(#quote_ident)
                     }
                 };

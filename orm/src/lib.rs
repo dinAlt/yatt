@@ -26,13 +26,15 @@ impl ToString for NodeFieldNames {
 
 pub type DynErr = Box<dyn Error>;
 pub type DynResult<T> = Result<T, DynErr>;
+pub type RecSourceResult<T> = DynResult<Box<dyn RecordsSource<Item = T>>>;
+pub type BoxStorage<T> = Box<dyn Storage<Item = T>>;  
 
 pub trait Storage {
     type Item;
     fn save(&self, item: &Self::Item) -> DynResult<usize>;
-    fn all(&self) -> DynResult<Box<dyn RecordsSource<Item = Self::Item>>>;
+    fn all(&self) -> RecSourceResult<Self::Item>;
     fn remove(&self, id: usize) -> DynResult<()>;
-    fn filter(&self, filter: Filter) -> DynResult<Box<dyn RecordsSource<Item = Self::Item>>>; 
+    fn filter(&self, filter: Filter) -> RecSourceResult<Self::Item>; 
 }
 
 pub trait RecordsSource {

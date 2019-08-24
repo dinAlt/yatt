@@ -5,15 +5,15 @@ use std::rc::Rc;
 use rusqlite::{params, Connection, Result as SQLITEResult, NO_PARAMS};
 
 use core::*;
-use orm::*;
 use filter::*;
+use orm::*;
 
 #[derive(Debug)]
 pub struct DB {
     con: Rc<Connection>,
 }
 
-impl DB { 
+impl DB {
     pub fn new<P: AsRef<Path>>(path: P) -> SQLITEResult<DB> {
         let exists = path.as_ref().exists();
         let con = Connection::open(path)?;
@@ -44,10 +44,10 @@ impl DB {
 }
 
 impl StorageRoot for DB {
-    fn nodes(&self) -> Box<dyn Storage<Item = Node>> {
+    fn nodes(&self) -> BoxStorage<Node> {
         Box::new(Nodes::new(Rc::clone(&self.con)))
     }
-    fn intervals(&self) -> Box<dyn Storage<Item = Interval>> {
+    fn intervals(&self) -> BoxStorage<Interval> {
         Box::new(Intervals::new(Rc::clone(&self.con)))
     }
 }
@@ -87,13 +87,13 @@ impl Storage for Nodes {
             Err(e) => Err(Box::new(e)),
         }
     }
-    fn all(&self) -> DynResult<Box<dyn RecordsSource<Item = Self::Item>>> {
+    fn all(&self) -> RecSourceResult<Self::Item> {
         unimplemented!();
     }
     fn remove(&self, id: usize) -> DynResult<()> {
         unimplemented!();
     }
-    fn filter(&self, filter: Filter) -> DynResult<Box<dyn RecordsSource<Item = Self::Item>>> {
+    fn filter(&self, filter: Filter) -> RecSourceResult<Self::Item> {
         unimplemented!();
     }
 }
@@ -110,6 +110,7 @@ impl Iterator for NodesIter {
 pub struct Intervals {
     con: Rc<Connection>,
 }
+
 impl Intervals {
     pub fn new(con: Rc<Connection>) -> Intervals {
         Intervals { con }
@@ -148,17 +149,26 @@ impl Storage for Intervals {
             Err(e) => Err(Box::new(e)),
         }
     }
-    fn all(&self) -> DynResult<Box<dyn RecordsSource<Item = Self::Item>>> {
+    fn all(&self) -> RecSourceResult<Self::Item> {
         unimplemented!()
     }
     fn remove(&self, id: usize) -> DynResult<()> {
         unimplemented!();
     }
-    fn filter(&self, filter: Filter) -> DynResult<Box<dyn RecordsSource<Item = Self::Item>>> {
+    fn filter(&self, filter: Filter) -> RecSourceResult<Self::Item> {
         unimplemented!();
     }
 }
 
+trait BuildWhere {
+    fn build_where(&self) -> String;
+}
+
+impl BuildWhere for CmpVal {
+    fn build_where(&self) -> String {
+        unimplemented!()
+    }
+}
 
 #[cfg(test)]
 mod tests {

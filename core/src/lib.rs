@@ -1,9 +1,9 @@
 use chrono::prelude::*;
-use orm::{Storage, Identifiers};
+use orm::{Storage, Identifiers, BoxStorage};
 
 pub trait StorageRoot {
-    fn nodes(&self) -> Box<dyn Storage<Item = Node>>;
-    fn intervals(&self) -> Box<dyn Storage<Item = Interval>>;
+    fn nodes(&self) -> BoxStorage<Node>;
+    fn intervals(&self) -> BoxStorage<Interval>;
 }
 
 #[derive(Debug, Identifiers)]
@@ -12,7 +12,7 @@ pub struct Node {
     pub label: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Identifiers)]
 pub struct Interval {
     pub id: usize,
     pub node_id: Option<usize>,
@@ -25,7 +25,7 @@ mod tests {
     use super::*;
     #[test]
     fn it_works() {
-        assert_eq!(Node::idents().id(), String::from("id"));
-        assert_eq!(Node::idents().label(), String::from("label"));
+        assert_eq!(Node::id_n(), String::from("id"));
+        assert_eq!(Node::label_n(), String::from("label"));
     }
 }
