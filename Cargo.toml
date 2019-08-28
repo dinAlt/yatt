@@ -1,8 +1,18 @@
-[workspace]
+[package]
+name = "yatt"
+version = "0.1.0"
+authors = ["dinAlt <dinalt2@gmail.com>"]
+edition = "2018"
+description = "Yet Another Task Tracker"
 
+[dependencies]
+clap = "2.33"
+cli = { path = "cli" }
+
+[workspace]
 members = [
   "core",
-  "cmd",
+  "cli",
   "storage/sqlite",
   "orm",
   "orm/orm_derive",

@@ -8,4 +8,5 @@ edition = "2018"
 
 [dependencies]
 chrono = "0.4.7"
+custom_error = "1.7"
 orm_derive = { path = "orm_derive" }

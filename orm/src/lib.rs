@@ -1,48 +1,20 @@
+pub mod errors;
 pub mod filter;
 pub use orm_derive::*;
 
-use std::error::Error;
+pub use errors::*;
 use filter::*;
 
-#[derive(Debug)]
-pub enum NodeFieldNames {
-    Id,
-    NodeId,
-    Begin,
-    End,
-}
-
-impl ToString for NodeFieldNames {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Id => String::from("id"),
-            Self::NodeId => String::from("node_id"),
-            Self::Begin => String::from("begin"),
-            Self::End => String::from("end"),
-        }
-    }
-}
-
-
-pub type DynErr = Box<dyn Error>;
-pub type DynResult<T> = Result<T, DynErr>;
-pub type RecSourceResult<T> = DynResult<Box<dyn RecordsSource<Item = T>>>;
-pub type BoxStorage<T> = Box<dyn Storage<Item = T>>;  
+pub type BoxStorage<T> = Box<dyn Storage<Item = T>>;
 
 pub trait Storage {
     type Item;
-    fn save(&self, item: &Self::Item) -> DynResult<usize>;
-    fn all(&self) -> RecSourceResult<Self::Item>;
-    fn remove(&self, id: usize) -> DynResult<()>;
-    fn filter(&self, filter: Filter) -> RecSourceResult<Self::Item>; 
+    fn save(&self, item: &Self::Item) -> DBResult<usize>;
+    fn all(&self) -> DBResult<Vec<Self::Item>>;
+    fn remove(&self, id: usize) -> DBResult<()>;
+    fn filter(&self, filter: Filter) -> DBResult<Vec<Self::Item>>;
+    fn with_max(&self, field: &str) -> DBResult<Option<Self::Item>>;
 }
-
-pub trait RecordsSource {
-    type Item;
-    fn fetch_next(&self) -> DynResult<Option<Self::Item>>;
-    fn get_iter(&self) -> DynResult<Box<dyn Iterator<Item = Self::Item>>>;
-}
-
 
 #[cfg(test)]
 mod tests {

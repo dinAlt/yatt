@@ -1,6 +1,6 @@
 use chrono::prelude::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CmpVal {
     Usize(usize),
     DateTime(DateTime<Utc>),
@@ -8,13 +8,16 @@ pub enum CmpVal {
     Null,
 }
 
-#[derive(Debug)]
-pub struct LogOp(Filter, Filter);
+#[derive(Debug)] pub enum Filter {
+    CmpOp(CmpOp),
+    LogOp(Box<LogOp>),
+}
 
 #[derive(Debug)]
-pub enum Filter {
-    CmpOp(CmpOp),
-    BinOp(Box<LogOp>),
+pub enum LogOp {
+    And(Filter, Filter),
+    Or(Filter, Filter),
+    Not(Filter),
 }
 
 #[derive(Debug)]
@@ -25,54 +28,61 @@ pub enum CmpOp {
     Ne(String, CmpVal),
 }
 
+pub fn gt(field: String, value: impl Into<CmpVal>) -> Filter {
+    Filter::CmpOp(CmpOp::Gt(field, value.into()))
+}
+pub fn lt(field: String, value: impl Into<CmpVal>) -> Filter {
+    Filter::CmpOp(CmpOp::Lt(field, value.into()))
+}
+pub fn eq(field: String, value: impl Into<CmpVal>) -> Filter {
+    Filter::CmpOp(CmpOp::Eq(field, value.into()))
+}
+pub fn ne(field: String, value: impl Into<CmpVal>) -> Filter {
+    Filter::CmpOp(CmpOp::Ne(field, value.into()))
+}
+pub fn and(f1: Filter, f2: Filter) -> Filter {
+    Filter::LogOp(Box::new(LogOp::And(f1,f2)))
+}
+pub fn or(f1: Filter, f2: Filter) -> Filter {
+    Filter::LogOp(Box::new(LogOp::Or(f1,f2)))
+}
+pub fn not(f: Filter) -> Filter {
+    Filter::LogOp(Box::new(LogOp::Not(f)))
+}
+
 impl From<usize> for CmpVal {
     fn from(u: usize) -> CmpVal {
         CmpVal::Usize(u)
     }
 }
-
-pub trait AsCmpVal {
-    fn as_cmp_val(self) -> CmpVal;
-}
-
-pub fn gt(field: String, value: impl AsCmpVal) -> Filter {
-    Filter::CmpOp(CmpOp::Gt(field, value.as_cmp_val()))
-}
-
-impl AsCmpVal for usize {
-    fn as_cmp_val(self) -> CmpVal {
-        CmpVal::Usize(self)
+impl From<DateTime<Local>> for CmpVal {
+    fn from(val: DateTime<Local>) -> CmpVal {
+        CmpVal::DateTime(DateTime::from(val))
     }
 }
-
-impl AsCmpVal for DateTime<Utc> {
-    fn as_cmp_val(self) -> CmpVal {
-        CmpVal::DateTime(self)
+impl From<DateTime<Utc>> for CmpVal {
+    fn from(val: DateTime<Utc>) -> CmpVal {
+        CmpVal::DateTime(val)
     }
 }
-
-impl AsCmpVal for DateTime<Local> {
-    fn as_cmp_val(self) -> CmpVal {
-        let u = DateTime::from(self);
-        CmpVal::DateTime(u)
+impl From<&str> for CmpVal {
+    fn from(val: &str) -> CmpVal {
+        CmpVal::String(val.to_string())
     }
 }
-
-impl AsCmpVal for String {
-    fn as_cmp_val(self) -> CmpVal {
-        CmpVal::String(self)
+impl From<String> for CmpVal {
+    fn from(val: String) -> CmpVal {
+        CmpVal::String(val)
     }
 }
-
-impl AsCmpVal for &str {
-    fn as_cmp_val(self) -> CmpVal {
-        CmpVal::String(self.to_string())
+impl From<&String> for CmpVal {
+    fn from(val: &String) -> CmpVal {
+        CmpVal::String(val.clone())
     }
 }
-
-impl AsCmpVal for CmpVal {
-    fn as_cmp_val(self) -> CmpVal {
-        self
+impl From<&CmpVal> for CmpVal {
+    fn from(val: &CmpVal) -> CmpVal {
+        (*val).clone()
     }
 }
 
@@ -82,7 +92,7 @@ mod tests {
     #[test]
     fn it_works() {
         let s = String::from("a");
-        let g = gt(s, "sdf");
+        let g = gt(s, 8);
         assert_eq!(2 + 2, 4);
     }
 }
