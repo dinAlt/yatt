@@ -104,10 +104,14 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
     skin.italic.set_fgbg(Magenta, rgb(30, 30, 40));
     skin.bullet = StyledChar::from_fg_char(Yellow, '⟡');
     skin.quote_mark.set_fg(Yellow);
+    let mut conf = parse_config(&base_path)?;
+
+    #[cfg(debug_assertions)]
+    debug_config(&mut conf);
 
     let res = commands::exec(AppContext {
         args: parse_args(&info),
-        conf: parse_config(&base_path)?,
+        conf: conf,
         root: base_path,
         skin: &skin,
     });
@@ -117,6 +121,10 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
     };
 
     res
+}
+
+fn debug_config(conf: &mut AppConfig) {
+    conf.db_path = "yatt_debug.db".to_string();
 }
 
 fn format_datetime(dt: &DateTime<Utc>) -> String {
