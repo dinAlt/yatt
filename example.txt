@@ -1,8 +1,0 @@
-node_id = 3 and (((BEGIN > 3 AND BEGIN < 6) || begin = 10) OR end > 20)
-
-one = Eq(node_id, 3)
-two = Gt(begin, 3)
-three = Lt(Begin, 6)
-four(end, 20)
-
-and(Eq(node_id,3), Or(Or(And(Gt(begin,3), Lt(begin, 6)), Eq(begin, 10)), Gt(end, 20)))

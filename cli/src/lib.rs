@@ -73,6 +73,7 @@ fn parse_args<'a>(info: &CrateInfo) -> ArgMatches<'a> {
         )
         .subcommand(SubCommand::with_name("stop").about("stops running task"))
         .subcommand(SubCommand::with_name("restart").about("restart last task"))
+        .subcommand(SubCommand::with_name("state").about("show running state"))
         .get_matches()
 }
 

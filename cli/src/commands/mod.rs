@@ -1,10 +1,11 @@
 use super::*;
 use sqlite::DB;
 
+mod restart;
 mod root;
 mod start;
+mod state;
 mod stop;
-mod restart;
 
 pub fn exec(ctx: AppContext) -> CliResult<()> {
     let db = {
@@ -36,6 +37,9 @@ fn select_and_exec(ctx: &CmdContext) -> CliResult<()> {
     }
     if let Some(m) = ctx.app.args.subcommand_matches("restart") {
         return restart::exec(ctx, m);
+    }
+    if let Some(m) = ctx.app.args.subcommand_matches("state") {
+        return state::exec(ctx, m);
     }
     root::exec(ctx, &ctx.app.args)
 }
