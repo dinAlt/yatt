@@ -75,6 +75,9 @@ impl dyn DBRoot {
 
         let high = usize::try_from(high).unwrap();
         let mut parent_id = None;
+        if !nodes.is_empty() {
+            parent_id = Some(nodes.last().unwrap().id)
+        }
         let mut node;
         for n in path.iter().take(p_len).skip(high) {
             node = Node {
