@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) fn exec(ctx: &CmdContext, _ars: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
     let res = ctx
         .db
         .cur_running()
@@ -8,7 +8,7 @@ pub(crate) fn exec(ctx: &CmdContext, _ars: &ArgMatches) -> CliResult<()> {
 
     let message = if let Some((node, interval)) = res {
         format!(
-            r#"Task *"{}"* (started at **{}**)."#,
+            r#"Task *{}* (started at **{}**)."#,
             node.label,
             format_datetime(&interval.begin)
         )
@@ -16,6 +16,6 @@ pub(crate) fn exec(ctx: &CmdContext, _ars: &ArgMatches) -> CliResult<()> {
         r#"there is no task running"#.to_string()
     };
 
-    ctx.app.skin.print_text(&message);
+    ctx.skin.print_text(&message);
     Ok(())
 }

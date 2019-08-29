@@ -1,6 +1,6 @@
 use super::*;
 
-pub(crate) fn exec(ctx: &CmdContext, _ars: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
     let res = ctx
         .db
         .cur_running()
@@ -17,12 +17,12 @@ pub(crate) fn exec(ctx: &CmdContext, _ars: &ArgMatches) -> CliResult<()> {
     interval.end = Some(Utc::now());
     ctx.db.intervals().save(&interval)?;
     let text = format!(
-        r#"Task *"{}"* started at **{}** has been stopped just now."#,
+        r#"Task *{}* started at **{}** has been stopped just now."#,
         node.label,
         format_datetime(&interval.begin)
     );
 
-    ctx.app.skin.print_text(&text);
+    ctx.skin.print_text(&text);
 
     Ok(())
 }

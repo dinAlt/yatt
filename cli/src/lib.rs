@@ -5,7 +5,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use chrono::prelude::*;
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap;
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use config::{Config, File};
 use crossterm_style::Color::*;
 use dirs;
@@ -15,6 +16,7 @@ mod commands;
 mod errors;
 
 use errors::*;
+use sqlite::DB;
 
 pub struct CrateInfo<'a> {
     pub name: &'a str,
@@ -23,13 +25,12 @@ pub struct CrateInfo<'a> {
     pub description: &'a str,
 }
 
-pub type CliResult<T> = std::result::Result<T, CliError>;
-
 pub struct AppContext<'a> {
     pub args: ArgMatches<'a>,
     pub conf: AppConfig,
     pub root: PathBuf,
     pub skin: &'a MadSkin,
+    pub db: Box<dyn core::DBRoot>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -56,17 +57,19 @@ fn parse_config(base_path: &PathBuf) -> CliResult<AppConfig> {
     }
 }
 
-fn parse_args<'a>(info: &CrateInfo) -> ArgMatches<'a> {
+fn make_args<'a>(info: &CrateInfo) -> ArgMatches<'a> {
     App::new(info.name)
         .version(info.version)
         .author(info.authors)
         .about(info.description)
+        .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("start")
                 .about("starts new task, or continues existing")
+                .setting(AppSettings::ArgRequiredElseHelp)
                 .arg(
                     Arg::with_name("task")
-                        .help("task name with nested tasks, delimited by \">\"")
+                        .help("task name with nested tasks, delimited by \"::\"")
                         .required(true)
                         .multiple(true),
                 ),
@@ -109,17 +112,24 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
     #[cfg(debug_assertions)]
     debug_config(&mut conf);
 
-    let res = commands::exec(AppContext {
-        args: parse_args(&info),
-        conf: conf,
+    let db = {
+        match DB::new(base_path.join(&conf.db_path)) {
+            Ok(db) => db,
+            Err(e) => return Err(CliError::DB { source: e }),
+        }
+    };
+
+    let res = commands::exec(&AppContext {
+        args: make_args(&info),
+        conf,
         root: base_path,
         skin: &skin,
+        db: Box::new(db),
     });
 
     if let Err(e) = &res {
         skin.print_text(&format!("{}", e));
     };
-
     res
 }
 
@@ -140,8 +150,9 @@ fn format_datetime(dt: &DateTime<Utc>) -> String {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     #[test]
     fn it_works() {
-        assert_eq!(2 + 2, 4);
+        // assert_eq!(test_command(), format!("{}", 12));
     }
 }

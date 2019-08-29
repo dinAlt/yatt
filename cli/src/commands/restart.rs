@@ -2,14 +2,14 @@ use super::*;
 use core::{Interval, Node};
 use orm::filter::*;
 
-pub(crate) fn exec(ctx: &CmdContext, _ars: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
     let res = ctx
         .db
         .cur_running()
         .map_err(|source| CliError::DB { source })?;
     if let Some((node, interval)) = res {
         let message = format!(
-            r#"Task *"{}"* already running (started at **{}**)."#,
+            r#"Task *{}* already running (started at **{}**)."#,
             node.label,
             format_datetime(&interval.begin)
         );
@@ -48,7 +48,7 @@ pub(crate) fn exec(ctx: &CmdContext, _ars: &ArgMatches) -> CliResult<()> {
         format_datetime(&now)
     );
 
-    ctx.app.skin.print_text(&text);
+    ctx.skin.print_text(&text);
 
     Ok(())
 }

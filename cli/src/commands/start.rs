@@ -1,14 +1,14 @@
 use super::*;
 use core::Interval;
 
-pub(crate) fn exec(ctx: &CmdContext, ars: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
     let res = ctx
         .db
         .cur_running()
         .map_err(|source| CliError::DB { source })?;
     if let Some((node, interval)) = res {
         let message = format!(
-            r#"Task *"{}"* already running (started at **{}**)."#,
+            r#"Task *{}* already running (started at **{}**)."#,
             node.label,
             format_datetime(&interval.begin)
         );
@@ -36,12 +36,12 @@ pub(crate) fn exec(ctx: &CmdContext, ars: &ArgMatches) -> CliResult<()> {
         .join(" -> ");
 
     let text = format!(
-        r#"Task *"{}"* started at **{}**."#,
+        r#"Task *{}* started at **{}**."#,
         path,
         format_datetime(&now)
     );
 
-    ctx.app.skin.print_text(&text);
+    ctx.skin.print_text(&text);
 
     Ok(())
 }
