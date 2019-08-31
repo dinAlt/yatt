@@ -38,7 +38,7 @@ pub(crate) fn print_interval_info(task: &[Node], i: &Interval, s: &TaskStyle) {
         }
     }
 
-    println!(".");
+    println!();
 }
 
 pub(crate) fn print_error(message: &str, s: &ObjectStyle) {
