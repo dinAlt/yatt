@@ -14,6 +14,7 @@ pub trait Storage {
     fn remove(&self, id: usize) -> DBResult<()>;
     fn filter(&self, filter: Filter) -> DBResult<Vec<Self::Item>>;
     fn with_max(&self, field: &str) -> DBResult<Option<Self::Item>>;
+    fn by_id(&self, id: usize) -> DBResult<Self::Item>;
 }
 
 #[cfg(test)]

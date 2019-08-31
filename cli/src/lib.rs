@@ -14,9 +14,15 @@ use termimad::*;
 
 mod commands;
 mod errors;
+mod format;
+mod print;
+mod style;
 
 use errors::*;
+pub(crate) use format::*;
 use sqlite::DB;
+pub(crate) use style::*;
+pub(crate) use print::*;
 
 pub struct CrateInfo<'a> {
     pub name: &'a str,
@@ -30,6 +36,7 @@ pub struct AppContext<'a> {
     pub conf: AppConfig,
     pub root: PathBuf,
     pub skin: &'a MadSkin,
+    pub style: AppStyle,
     pub db: Box<dyn core::DBRoot>,
 }
 
@@ -124,28 +131,15 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
         conf,
         root: base_path,
         skin: &skin,
+        style: AppStyle::default(),
         db: Box::new(db),
     });
 
-    if let Err(e) = &res {
-        skin.print_text(&format!("{}", e));
-    };
     res
 }
 
 fn debug_config(conf: &mut AppConfig) {
     conf.db_path = "yatt_debug.db".to_string();
-}
-
-fn format_datetime(dt: &DateTime<Utc>) -> String {
-    let dt: DateTime<Local> = DateTime::from(*dt);
-    let pattern = if dt.date() == Local::today() {
-        "%H:%M:%S"
-    } else {
-        "%Y-%m-%d %H:%M:%S"
-    };
-
-    dt.format(pattern).to_string()
 }
 
 #[cfg(test)]

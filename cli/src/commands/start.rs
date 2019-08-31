@@ -1,4 +1,4 @@
-use super::*;
+use crate::*;
 use core::Interval;
 
 pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
@@ -7,12 +7,11 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
         .cur_running()
         .map_err(|source| CliError::DB { source })?;
     if let Some((node, interval)) = res {
-        let message = format!(
-            r#"Task *{}* already running (started at **{}**)."#,
-            node.label,
-            format_datetime(&interval.begin)
-        );
-        return Err(CliError::Cmd { message });
+        let task = &ctx.db.ancestors(node.id)?;
+        let name = format_task_name(task);
+        print_error("task already running.", &ctx.style.error);
+        print_interval_info(&task, &interval, &ctx.style.task);
+        return Err(CliError::wrap(Box::new(TaskError::AlreadyRunning { name })));
     };
 
     let path: Vec<&str> = ars.values_of("task").unwrap().collect();
@@ -20,28 +19,17 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
     let path: Vec<&str> = path.split("::").map(|t| t.trim()).collect();
 
     let nodes = ctx.db.create_path(&path)?;
-    let now = Utc::now();
-    ctx.db.intervals().save(&Interval {
+    let interval = Interval {
         id: 0,
         node_id: Some(nodes.last().unwrap().id),
-        begin: now,
+        begin: Utc::now(),
         end: None,
         deleted: false,
-    })?;
+    };
+    ctx.db.intervals().save(&interval)?;
 
-    let path = nodes
-        .into_iter()
-        .map(|n| n.label)
-        .collect::<Vec<String>>()
-        .join(" -> ");
-
-    let text = format!(
-        r#"Task *{}* started at **{}**."#,
-        path,
-        format_datetime(&now)
-    );
-
-    ctx.skin.print_text(&text);
+    print_cmd("Starting...", &ctx.style.cmd);
+    print_interval_info(&nodes, &interval, &ctx.style.task);
 
     Ok(())
 }

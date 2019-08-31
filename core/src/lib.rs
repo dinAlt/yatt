@@ -41,6 +41,35 @@ impl dyn DBRoot {
         Ok(Some((node, interval)))
     }
 
+    pub fn last_running(&self) -> DBResult<Option<(Node, Interval)>> {
+        let interval = self
+            .intervals()
+            .with_max("end")?;
+
+        if interval.is_none() {
+            return Ok(None);
+        }
+
+        let interval = interval.unwrap();
+
+        let node = self
+            .nodes()
+            .filter(eq(Node::id_n(), interval.node_id.unwrap()))?;
+
+        if node.is_empty() {
+            return Err(DBError::Unexpected {
+                message: format!(
+                    "Task with id={} for interval with id={}, not exists",
+                    interval.node_id.unwrap_or(0),
+                    interval.id,
+                ),
+            });
+        }
+
+        let node = node[0].clone();
+        Ok(Some((node, interval)))
+    }
+
     pub fn find_path(&self, path: &[&str]) -> DBResult<Vec<Node>> {
         let mut parent = CmpVal::Null;
         let mut res = Vec::new();
@@ -95,6 +124,23 @@ impl dyn DBRoot {
         }
 
         Ok(nodes)
+    }
+
+    /// Returns ancestors of node with givent id, inluding
+    /// the node with given id itself.
+    pub fn ancestors(&self, id: usize) -> DBResult<Vec<Node>> {
+        let mut res = Vec::new();
+        let mut next = Some(id);
+
+        while next.is_some() {
+            let node = self.nodes().by_id(next.unwrap())?;
+            next = node.parent_id;
+            res.push(node);
+        }
+
+        res.reverse();
+
+        Ok(res)
     }
 
     fn find_path_part(&self, name: &str, parent_id: &CmpVal) -> DBResult<Option<Node>> {

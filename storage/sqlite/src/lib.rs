@@ -162,45 +162,29 @@ impl Storage for Nodes {
         Ok(res)
     }
     fn with_max(&self, field: &str) -> DBResult<Option<Self::Item>> {
-        let sql = format!(
-            "select
-        id,
-        parent_id,
-        label,
-        closed,
-        created,
-        deleted
-            from nodes where deleted = 0 order by {} desc limit 1",
-            field
-        );
-
-        let mut stmt = self
-            .con
-            .prepare(&sql)
+        let res = self
+            .select(&format!(
+                "where deleted = 0 order by {} desc limit 1",
+                field
+            ))
             .map_err(|s| DBError::wrap(Box::new(s)))?;
+        if res.is_empty() {
+            return Ok(None);
+        }
 
-        let mut rows = stmt
-            .query(NO_PARAMS)
+        Ok(Some(res.first().unwrap().clone()))
+    }
+    fn by_id(&self, id: usize) -> DBResult<Self::Item> {
+        let res = self
+            .select(&format!("where id = {}", id))
             .map_err(|s| DBError::wrap(Box::new(s)))?;
+        if res.is_empty() {
+            return Err(DBError::IsEmpty {
+                message: format!("no row with id {}", id),
+            });
+        }
 
-        if let Some(r) = rows.next().map_err(|s| DBError::wrap(Box::new(s)))? {
-            let id: isize = r.get(0).map_err(|s| DBError::wrap(Box::new(s)))?;
-            let id = usize::try_from(id).unwrap();
-            let parent_id: Option<isize> = r.get(1).map_err(|s| DBError::wrap(Box::new(s)))?;
-            let parent_id = match parent_id {
-                Some(v) => Some(usize::try_from(v).unwrap()),
-                None => None,
-            };
-            return Ok(Some(Node {
-                id,
-                parent_id,
-                label: r.get(2).map_err(|s| DBError::wrap(Box::new(s)))?,
-                closed: r.get(3).map_err(|s| DBError::wrap(Box::new(s)))?,
-                created: r.get(4).map_err(|s| DBError::wrap(Box::new(s)))?,
-                deleted: r.get(5).map_err(|s| DBError::wrap(Box::new(s)))?,
-            }));
-        };
-        Ok(None)
+        Ok(res.first().unwrap().clone())
     }
 }
 
@@ -300,44 +284,29 @@ impl Storage for Intervals {
         Ok(res)
     }
     fn with_max(&self, field: &str) -> DBResult<Option<Self::Item>> {
-        let sql = format!(
-            "select
-        id,
-        node_id,
-        begin,
-        end,
-        deleted
-            from intervals where
-            deleted = 0 order by {} desc limit 1",
-            field
-        );
-
-        let mut stmt = self
-            .con
-            .prepare(&sql)
+        let res = self
+            .select(&format!(
+                "where deleted = 0 order by {} desc limit 1",
+                field
+            ))
             .map_err(|s| DBError::wrap(Box::new(s)))?;
+        if res.is_empty() {
+            return Ok(None);
+        }
 
-        let mut rows = stmt
-            .query(NO_PARAMS)
+        Ok(Some(res.first().unwrap().clone()))
+    }
+    fn by_id(&self, id: usize) -> DBResult<Self::Item> {
+        let res = self
+            .select(&format!("where id = {}", id))
             .map_err(|s| DBError::wrap(Box::new(s)))?;
+        if res.is_empty() {
+            return Err(DBError::IsEmpty {
+                message: format!("no row with id {}", id),
+            });
+        }
 
-        if let Some(r) = rows.next().map_err(|s| DBError::wrap(Box::new(s)))? {
-            let id: isize = r.get(0).map_err(|s| DBError::wrap(Box::new(s)))?;
-            let id = usize::try_from(id).unwrap();
-            let node_id: Option<isize> = r.get(1).map_err(|s| DBError::wrap(Box::new(s)))?;
-            let node_id = match node_id {
-                Some(v) => Some(usize::try_from(v).unwrap()),
-                None => None,
-            };
-            return Ok(Some(Interval {
-                id,
-                node_id,
-                begin: r.get(2).map_err(|s| DBError::wrap(Box::new(s)))?,
-                end: r.get(3).map_err(|s| DBError::wrap(Box::new(s)))?,
-                deleted: r.get(4).map_err(|s| DBError::wrap(Box::new(s)))?,
-            }));
-        };
-        Ok(None)
+        Ok(res.first().unwrap().clone())
     }
 }
 

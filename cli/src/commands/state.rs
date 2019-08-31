@@ -1,4 +1,4 @@
-use super::*;
+use crate::*;
 
 pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
     let res = ctx
@@ -6,16 +6,18 @@ pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
         .cur_running()
         .map_err(|source| CliError::DB { source })?;
 
-    let message = if let Some((node, interval)) = res {
-        format!(
-            r#"Task *{}* (started at **{}**)."#,
-            node.label,
-            format_datetime(&interval.begin)
-        )
+    if let Some((node, interval)) = res {
+        let task = &ctx.db.ancestors(node.id)?;
+        print_cmd("Running", &ctx.style.cmd);
+        print_interval_info(&task, &interval, &ctx.style.task);
     } else {
-        r#"there is no task running"#.to_string()
+        print_cmd("Stopped", &ctx.style.cmd);
+        let last = ctx.db.last_running()?;
+        if let Some((node, interval)) = last {
+            let task = &ctx.db.ancestors(node.id)?;
+            print_interval_info(&task, &interval, &ctx.style.task);
+        }
     };
 
-    ctx.skin.print_text(&message);
     Ok(())
 }

@@ -1,6 +1,5 @@
-use super::*;
+use crate::*;
 
-pub(crate) fn exec(_ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
-    println!("{}", ars.usage());
+pub(crate) fn exec(_ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
     Ok(())
 }

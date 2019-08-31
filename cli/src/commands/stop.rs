@@ -1,4 +1,4 @@
-use super::*;
+use crate::*;
 
 pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
     let res = ctx
@@ -8,21 +8,18 @@ pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
     let (node, mut interval) = match res {
         Some((n, i)) => (n, i),
         None => {
-            return Err(CliError::Cmd {
-                message: r#"there is no task running"#.to_string(),
-            })
+            print_error("no task running.\n", &ctx.style.error);
+            return Err(CliError::wrap(Box::new(TaskError::NotRunnint)));
         }
     };
 
     interval.end = Some(Utc::now());
     ctx.db.intervals().save(&interval)?;
-    let text = format!(
-        r#"Task *{}* started at **{}** has been stopped just now."#,
-        node.label,
-        format_datetime(&interval.begin)
-    );
 
-    ctx.skin.print_text(&text);
+    let task = &ctx.db.ancestors(node.id)?;
+
+    print_cmd("Stopping...", &ctx.style.cmd);
+    print_interval_info(&task, &interval, &ctx.style.task);
 
     Ok(())
 }

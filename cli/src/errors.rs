@@ -14,12 +14,18 @@ custom_error! {pub CliError
     Io {source: io::Error} = "IO error: {:?}",
     AppDir {message: String}  = "Application directory locate error: {}",
     Cmd{message: String} = "{}",
-    Unexpected{message: String} = "Unexpected behavior: {}"
-
+    Unexpected{message: String} = "Unexpected behavior: {}",
+    Wrapped{source: Box<dyn Error>} = "{:?}",
 }
 
 impl CliError {
-    pub fn wrap(e: Box<dyn Error>) -> DBError {
-        DBError::Wrapped { source: e }
+    pub fn wrap(e: Box<dyn Error>) -> CliError {
+        CliError::Wrapped { source: e }
     }
+}
+
+custom_error! {pub TaskError
+    AlreadyRunning{name: String} = "task already running: {}.",
+    NoPrivios = "no priviosly started task",
+    NotRunnint = "no task running",
 }
