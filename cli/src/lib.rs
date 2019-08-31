@@ -22,7 +22,7 @@ use errors::*;
 pub(crate) use format::*;
 use sqlite::DB;
 pub(crate) use style::*;
-pub(crate) use print::*;
+pub use print::*;
 
 pub struct CrateInfo<'a> {
     pub name: &'a str,
@@ -35,8 +35,7 @@ pub struct AppContext<'a> {
     pub args: ArgMatches<'a>,
     pub conf: AppConfig,
     pub root: PathBuf,
-    pub skin: &'a MadSkin,
-    pub style: AppStyle,
+    pub printer: Box<dyn Printer>,
     pub db: Box<dyn core::DBRoot>,
 }
 
@@ -130,8 +129,7 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
         args: make_args(&info),
         conf,
         root: base_path,
-        skin: &skin,
-        style: AppStyle::default(),
+        printer: Box::new(TermPrinter::default()),
         db: Box::new(db),
     })
 }

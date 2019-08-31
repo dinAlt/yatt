@@ -9,8 +9,14 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
     if let Some((node, interval)) = res {
         let task = &ctx.db.ancestors(node.id)?;
         let name = format_task_name(task);
-        print_error("task already running.", &ctx.style.error);
-        print_interval_info(&task, &interval, &ctx.style.task);
+        ctx.printer.interval_error(
+            &IntervalData {
+                interval: &interval,
+                task,
+                title: IntervalData::default_title(),
+            },
+            &"task already running.",
+        );
         return Err(CliError::wrap(Box::new(TaskError::AlreadyRunning { name })));
     };
 
@@ -28,8 +34,14 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
     };
     ctx.db.intervals().save(&interval)?;
 
-    print_cmd("Starting...", &ctx.style.cmd);
-    print_interval_info(&nodes, &interval, &ctx.style.task);
+    ctx.printer.interval_cmd(&IntervalCmdData {
+        cmd_text: &"Starting...",
+        interval: IntervalData {
+            interval: &interval,
+            task: &nodes,
+            title: IntervalData::default_title(),
+        },
+    });
 
     Ok(())
 }

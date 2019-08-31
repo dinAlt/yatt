@@ -8,14 +8,29 @@ pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
 
     if let Some((node, interval)) = res {
         let task = &ctx.db.ancestors(node.id)?;
-        print_cmd("Running", &ctx.style.cmd);
-        print_interval_info(&task, &interval, &ctx.style.task);
+        ctx.printer.interval_cmd(&IntervalCmdData {
+            cmd_text: &"Running",
+            interval: IntervalData {
+                interval: &interval,
+                task,
+                title: IntervalData::default_title(),
+            },
+        });
     } else {
-        print_cmd("Stopped", &ctx.style.cmd);
         let last = ctx.db.last_running()?;
+        let cmd_text = &"Stopped";
         if let Some((node, interval)) = last {
             let task = &ctx.db.ancestors(node.id)?;
-            print_interval_info(&task, &interval, &ctx.style.task);
+            ctx.printer.interval_cmd(&IntervalCmdData {
+                cmd_text,
+                interval: IntervalData {
+                    interval: &interval,
+                    task,
+                    title: &"Previous interval:",
+                },
+            });
+        } else {
+            ctx.printer.cmd(cmd_text);
         }
     };
 

@@ -8,7 +8,7 @@ pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
     let (node, mut interval) = match res {
         Some((n, i)) => (n, i),
         None => {
-            print_error("no task running.\n", &ctx.style.error);
+            ctx.printer.error("no task running.");
             return Err(CliError::wrap(Box::new(TaskError::NotRunnint)));
         }
     };
@@ -18,8 +18,14 @@ pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
 
     let task = &ctx.db.ancestors(node.id)?;
 
-    print_cmd("Stopping...", &ctx.style.cmd);
-    print_interval_info(&task, &interval, &ctx.style.task);
+    ctx.printer.interval_cmd(&IntervalCmdData {
+        cmd_text: "Stopping...",
+        interval: IntervalData {
+            interval: &interval,
+            task,
+            title: IntervalData::default_title(),
+        },
+    });
 
     Ok(())
 }

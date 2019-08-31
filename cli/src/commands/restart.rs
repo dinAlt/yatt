@@ -11,14 +11,20 @@ pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
     if let Some((node, interval)) = res {
         let task = &ctx.db.ancestors(node.id)?;
         let name = format_task_name(&task);
-        print_error("task already running.", &ctx.style.error);
-        print_interval_info(&task, &interval, &ctx.style.task);
+        ctx.printer.interval_error(
+            &IntervalData {
+                interval: &interval,
+                task,
+                title: IntervalData::default_title(),
+            },
+            &"task already running.",
+        );
         return Err(CliError::wrap(Box::new(TaskError::AlreadyRunning { name })));
     };
 
     let inteval = ctx.db.intervals().with_max(&Interval::begin_n())?;
     if inteval.is_none() {
-        print_error("there is no priviosly started tasks.\n", &ctx.style.error);
+        ctx.printer.error(&"there is no priviosly started tasks.");
         return Err(CliError::wrap(Box::new(TaskError::NoPrivios)));
     }
 
@@ -42,9 +48,15 @@ pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
 
     ctx.db.intervals().save(&interval)?;
 
-        let task = &ctx.db.ancestors(node.id)?;
-    print_cmd("Restarting...", &ctx.style.cmd);
-    print_interval_info(&task, &interval, &ctx.style.task);
+    let task = &ctx.db.ancestors(node.id)?;
+    ctx.printer.interval_cmd(&IntervalCmdData {
+        cmd_text: &"Restarting...",
+        interval: IntervalData {
+            interval: &interval,
+            task,
+            title: IntervalData::default_title(),
+        },
+    });
 
     Ok(())
 }

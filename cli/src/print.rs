@@ -1,36 +1,91 @@
+use crate::*;
 use core::*;
 
-use crossterm_style::ObjectStyle;
+const DEFAULT_INTERVAL_INFO_TITLE: &str = "Interval info:";
 
-use crate::*;
-
-pub(crate) fn print_cmd(cmd: &str, s: &ObjectStyle) {
-    println!("{}\n", s.apply_to(cmd));
+pub struct IntervalData<'a> {
+    pub interval: &'a Interval,
+    pub task: &'a [Node],
+    pub title: &'a str,
 }
 
-pub(crate) fn print_interval_info(task: &[Node], i: &Interval, s: &TaskStyle) {
-    println!("Interval info:");
+impl IntervalData<'_> {
+    pub fn default_title() -> &'static str {
+        DEFAULT_INTERVAL_INFO_TITLE
+    }
+}
+
+pub struct IntervalCmdData<'a> {
+    pub cmd_text: &'a str,
+    pub interval: IntervalData<'a>,
+}
+
+pub struct IntervalError<'a> {
+    pub err_text: &'a str,
+    pub interval: IntervalData<'a>,
+}
+
+pub trait Printer {
+    fn interval_cmd(&self, d: &IntervalCmdData);
+    fn error(&self, e: &str);
+    fn interval_error(&self, d: &IntervalData, e: &str);
+    fn cmd(&self, d: &str);
+}
+
+pub struct TermPrinter {
+    style: AppStyle,
+}
+
+impl Default for TermPrinter {
+    fn default() -> Self {
+        TermPrinter {
+            style: Default::default(),
+        }
+    }
+}
+
+impl Printer for TermPrinter {
+    fn interval_cmd(&self, d: &IntervalCmdData) {
+        self.cmd(d.cmd_text);
+        println!();
+        print_interval_info(&d.interval, &self.style.task);
+    }
+    fn error(&self, e: &str) {
+        println!("Error: {}", &self.style.error.apply_to(e));
+    }
+    fn interval_error(&self, d: &IntervalData, e: &str) {
+        self.error(e);
+        println!();
+        print_interval_info(d, &self.style.task);
+    }
+    fn cmd(&self, d: &str) {
+        println!("{}", &self.style.cmd.apply_to(d));
+    }
+}
+
+fn print_interval_info(d: &IntervalData, s: &TaskStyle) {
+    println!("{}", d.title);
     print!("  Task: ");
-    for (i, t) in task.iter().enumerate() {
-       print!("{}", s.name.apply_to(&t.label));
-       if i < task.len() - 1 {
-           print!(" > ");
-       }
+    for (i, t) in d.task.iter().enumerate() {
+        print!("{}", s.name.apply_to(&t.label));
+        if i < d.task.len() - 1 {
+            print!(" > ");
+        }
     }
     println!();
     print!(
         "  Started: {}",
-        s.start_time.apply_to(format_datetime(&i.begin))
+        s.start_time.apply_to(format_datetime(&d.interval.begin))
     );
 
-    let dur = Utc::now() - i.begin;
+    let dur = Utc::now() - d.interval.begin;
 
     if dur.num_seconds() > 2 {
         print!(" ({} ago)", s.time_span.apply_to(format_duration(&dur)));
     }
 
-    if i.end.is_some() {
-        let e = i.end.unwrap();
+    if d.interval.end.is_some() {
+        let e = d.interval.end.unwrap();
         print!("\n  Stopped: {}", s.end_time.apply_to(format_datetime(&e)));
         let dur = Utc::now() - e;
         if dur.num_seconds() > 2 {
@@ -39,8 +94,4 @@ pub(crate) fn print_interval_info(task: &[Node], i: &Interval, s: &TaskStyle) {
     }
 
     println!();
-}
-
-pub(crate) fn print_error(message: &str, s: &ObjectStyle) {
-    println!("Error: {}\n", s.apply_to(message));
 }
