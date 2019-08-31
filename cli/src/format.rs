@@ -26,6 +26,7 @@ pub(crate) fn format_datetime(dt: &DateTime<Utc>) -> String {
     dt.format(pattern).to_string()
 }
 
+#[allow(clippy::many_single_char_names)]
 pub(crate) fn format_duration(dur: &Duration) -> String {
     let mut res = Vec::new();
 

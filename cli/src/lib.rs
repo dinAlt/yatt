@@ -126,16 +126,14 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
         }
     };
 
-    let res = commands::exec(&AppContext {
+    commands::exec(&AppContext {
         args: make_args(&info),
         conf,
         root: base_path,
         skin: &skin,
         style: AppStyle::default(),
         db: Box::new(db),
-    });
-
-    res
+    })
 }
 
 fn debug_config(conf: &mut AppConfig) {
