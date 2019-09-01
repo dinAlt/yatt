@@ -4,7 +4,7 @@ use chrono::prelude::*;
 
 use orm::errors::{DBError, DBResult};
 use orm::statement::*;
-use orm::{BoxStorage, Identifiers};
+use orm::{BoxStorage, Identifiers,FieldList, Fieldlist};
 
 pub trait DBRoot {
     fn nodes(&self) -> BoxStorage<Node>;
@@ -159,7 +159,7 @@ impl dyn DBRoot {
     }
 }
 
-#[derive(Debug, Clone, Identifiers)]
+#[derive(Debug, Clone, Identifiers, Fieldlist)]
 pub struct Node {
     pub id: usize,
     pub parent_id: Option<usize>,

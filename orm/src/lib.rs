@@ -39,6 +39,11 @@ impl<T: Clone> dyn Storage<Item = T> {
     }
 }
 
+// const fl: &'static [&'static str] = &["a", "b", "c"];
+pub trait FieldList {
+    fn field_list() -> &'static [&'static str];
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
