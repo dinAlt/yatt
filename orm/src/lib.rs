@@ -1,9 +1,9 @@
 pub mod errors;
-pub mod filter;
+pub mod statement;
 pub use orm_derive::*;
 
 pub use errors::*;
-use filter::*;
+use statement::*;
 
 pub type BoxStorage<T> = Box<dyn Storage<Item = T>>;
 
@@ -12,9 +12,31 @@ pub trait Storage {
     fn save(&self, item: &Self::Item) -> DBResult<usize>;
     fn all(&self) -> DBResult<Vec<Self::Item>>;
     fn remove(&self, id: usize) -> DBResult<()>;
-    fn filter(&self, filter: Filter) -> DBResult<Vec<Self::Item>>;
-    fn with_max(&self, field: &str) -> DBResult<Option<Self::Item>>;
-    fn by_id(&self, id: usize) -> DBResult<Self::Item>;
+    fn by_statement(&self, s: Statement) -> DBResult<Vec<Self::Item>>;
+}
+
+impl<T: Clone> dyn Storage<Item = T> {
+    pub fn by_id(&self, id: usize) -> DBResult<T> {
+        let res = self.by_statement(filter(eq("id".to_string(), id)))?;
+        if res.is_empty() {
+            return Err(DBError::IsEmpty {
+                message: format!("no row with id {}", id),
+            });
+        }
+
+        Ok(res.first().unwrap().clone())
+    }
+    pub fn filter(&self, f: Filter) -> DBResult<Vec<T>> {
+        let res = self.by_statement(filter(f))?;
+        Ok(res)
+    }
+    pub fn with_max(&self, field: &str) -> DBResult<Option<T>> {
+        let res = self.by_statement(sort(field, SortDir::Descend))?;
+        if res.is_empty() {
+            return Ok(None);
+        }
+        Ok(Some(res.first().unwrap().clone()))
+    }
 }
 
 #[cfg(test)]

@@ -14,5 +14,6 @@ pub fn exec(ctx: &AppContext) -> CliResult<()> {
         ("state", Some(m)) => state::exec(ctx, m),
         _ => root::exec(ctx, &ctx.args),
     }
-}
 
+    //TODO: Proper error handling
+}

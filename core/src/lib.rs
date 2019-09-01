@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use chrono::prelude::*;
 
 use orm::errors::{DBError, DBResult};
-use orm::filter::*;
+use orm::statement::*;
 use orm::{BoxStorage, Identifiers};
 
 pub trait DBRoot {

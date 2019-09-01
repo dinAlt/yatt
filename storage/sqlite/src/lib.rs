@@ -7,7 +7,7 @@ use rusqlite::{params, Connection, Result as SQLITEResult, NO_PARAMS};
 
 use core::*;
 use orm::errors::*;
-use orm::filter::*;
+use orm::statement::*;
 use orm::*;
 
 #[derive(Debug)]
@@ -83,7 +83,6 @@ impl Nodes {
             from nodes {}",
             where_str
         );
-
         let mut stmt = self.con.prepare(&sql)?;
         let mut rows = stmt.query(NO_PARAMS)?;
         let mut res = Vec::new();
@@ -154,37 +153,12 @@ impl Storage for Nodes {
 
         Ok(())
     }
-    fn filter(&self, filter: Filter) -> DBResult<Vec<Self::Item>> {
+    fn by_statement(&self, statement: Statement) -> DBResult<Vec<Self::Item>> {
         let res = self
-            .select(&format!("where {}", filter.build_where()))
+            .select(&statement.build_where())
             .map_err(|s| DBError::wrap(Box::new(s)))?;
 
         Ok(res)
-    }
-    fn with_max(&self, field: &str) -> DBResult<Option<Self::Item>> {
-        let res = self
-            .select(&format!(
-                "where deleted = 0 order by {} desc limit 1",
-                field
-            ))
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-        if res.is_empty() {
-            return Ok(None);
-        }
-
-        Ok(Some(res.first().unwrap().clone()))
-    }
-    fn by_id(&self, id: usize) -> DBResult<Self::Item> {
-        let res = self
-            .select(&format!("where id = {}", id))
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-        if res.is_empty() {
-            return Err(DBError::IsEmpty {
-                message: format!("no row with id {}", id),
-            });
-        }
-
-        Ok(res.first().unwrap().clone())
     }
 }
 
@@ -276,44 +250,58 @@ impl Storage for Intervals {
 
         Ok(())
     }
-    fn filter(&self, filter: Filter) -> DBResult<Vec<Self::Item>> {
+    fn by_statement(&self, statement: Statement) -> DBResult<Vec<Self::Item>> {
         let res = self
-            .select(&format!("where {}", filter.build_where()))
+            .select(&statement.build_where())
             .map_err(|s| DBError::wrap(Box::new(s)))?;
 
         Ok(res)
-    }
-    fn with_max(&self, field: &str) -> DBResult<Option<Self::Item>> {
-        let res = self
-            .select(&format!(
-                "where deleted = 0 order by {} desc limit 1",
-                field
-            ))
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-        if res.is_empty() {
-            return Ok(None);
-        }
-
-        Ok(Some(res.first().unwrap().clone()))
-    }
-    fn by_id(&self, id: usize) -> DBResult<Self::Item> {
-        let res = self
-            .select(&format!("where id = {}", id))
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-        if res.is_empty() {
-            return Err(DBError::IsEmpty {
-                message: format!("no row with id {}", id),
-            });
-        }
-
-        Ok(res.first().unwrap().clone())
     }
 }
 
 trait BuildWhere {
     fn build_where(&self) -> String;
 }
+impl BuildWhere for Statement {
+    fn build_where(&self) -> String {
+        let mut res = String::new();
+        if self.filter.is_some() {
+            res += &format!("where {}", self.filter.as_ref().unwrap().build_where());
+        }
+        if self.sorts.is_some() {
+            res += " order by ";
+            res += &self
+                .sorts
+                .as_ref()
+                .unwrap()
+                .iter()
+                .map(|s| s.build_where())
+                .collect::<Vec<String>>()
+                .join(", ")
+        }
+        if self.limit.is_some() {
+            res += &format!(" limit {}", self.limit.unwrap());
+        }
+        if self.offset.is_some() {
+            res += &format!(" offset {}", self.offset.unwrap());
+        }
 
+        res
+    }
+}
+impl BuildWhere for SortItem {
+    fn build_where(&self) -> String {
+        format!("{} {}", self.0, self.1.build_where())
+    }
+}
+impl BuildWhere for SortDir {
+    fn build_where(&self) -> String {
+        match self {
+            SortDir::Ascend => "asc".to_string(),
+            SortDir::Descend => "desc".to_string(),
+        }
+    }
+}
 impl BuildWhere for CmpVal {
     fn build_where(&self) -> String {
         match self {
