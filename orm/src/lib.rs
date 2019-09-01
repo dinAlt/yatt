@@ -24,18 +24,18 @@ impl<T: Clone> dyn Storage<Item = T> {
             });
         }
 
-        Ok(res.first().unwrap().clone())
+        Ok(res.first().unwrap().to_owned())
     }
     pub fn filter(&self, f: Filter) -> DBResult<Vec<T>> {
         let res = self.by_statement(filter(f))?;
         Ok(res)
     }
     pub fn with_max(&self, field: &str) -> DBResult<Option<T>> {
-        let res = self.by_statement(sort(field, SortDir::Descend))?;
+        let res = self.by_statement(sort(field, SortDir::Descend).limit(1))?;
         if res.is_empty() {
             return Ok(None);
         }
-        Ok(Some(res.first().unwrap().clone()))
+        Ok(Some(res.first().unwrap().to_owned()))
     }
 }
 
