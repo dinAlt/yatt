@@ -124,14 +124,41 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
             Err(e) => return Err(CliError::DB { source: e }),
         }
     };
-
-    commands::exec(&AppContext {
+    
+    let app = AppContext {
         args: make_args(&info),
         conf,
         root: base_path,
         printer: Box::new(TermPrinter::default()),
         db: Box::new(db),
-    })
+    };
+    let res = commands::exec(&app);
+
+    if res.is_err() {
+        print_error(res.as_ref().unwrap_err(), app.printer);
+    }
+
+    res
+}
+
+fn print_error(e: &CliError, p: Box<dyn Printer>) {
+    if let CliError::Task{source} = e {
+        match source {
+            TaskError::Cmd{message} => p.error(message),
+            TaskError::CmdTaskInterval{
+                message,
+                interval,
+                task,
+            } => p.interval_error(&IntervalData{
+                interval,
+                task,
+                title: IntervalData::default_title(),
+            }, message),
+        }
+        return;
+    }
+
+    p.error(&e.to_string());
 }
 
 fn debug_config(conf: &mut AppConfig) {

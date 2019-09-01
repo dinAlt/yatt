@@ -42,9 +42,7 @@ impl dyn DBRoot {
     }
 
     pub fn last_running(&self) -> DBResult<Option<(Node, Interval)>> {
-        let interval = self
-            .intervals()
-            .with_max("end")?;
+        let interval = self.intervals().with_max("end")?;
 
         if interval.is_none() {
             return Ok(None);
@@ -171,6 +169,12 @@ pub struct Node {
     pub deleted: bool,
 }
 
+impl ToString for Node {
+    fn to_string(&self) -> String {
+        self.label.to_owned()
+    }
+}
+
 #[derive(Debug, Clone, Identifiers)]
 pub struct Interval {
     pub id: usize,
@@ -178,6 +182,17 @@ pub struct Interval {
     pub begin: DateTime<Utc>,
     pub end: Option<DateTime<Utc>>,
     pub deleted: bool,
+}
+
+impl ToString for Interval {
+    fn to_string(&self) -> String {
+        let end = match self.end {
+            Some(d) => d.to_rfc3339(),
+            None => "never".to_string(),
+        };
+        format!("[started: {} stopped: {}]", 
+            self.begin, end)
+    }
 }
 
 #[cfg(test)]

@@ -3,6 +3,7 @@ use core::*;
 
 const DEFAULT_INTERVAL_INFO_TITLE: &str = "Interval info:";
 
+#[derive(Debug, Clone)]
 pub struct IntervalData<'a> {
     pub interval: &'a Interval,
     pub task: &'a [Node],
@@ -15,11 +16,19 @@ impl IntervalData<'_> {
     }
 }
 
+impl ToString for IntervalData<'_> {
+    fn to_string(&self) -> String {
+        unimplemented!()
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct IntervalCmdData<'a> {
     pub cmd_text: &'a str,
     pub interval: IntervalData<'a>,
 }
 
+#[derive(Debug, Clone)]
 pub struct IntervalError<'a> {
     pub err_text: &'a str,
     pub interval: IntervalData<'a>,

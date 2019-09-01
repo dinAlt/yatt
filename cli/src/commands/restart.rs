@@ -9,23 +9,23 @@ pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
         .map_err(|source| CliError::DB { source })?;
 
     if let Some((node, interval)) = res {
-        let task = &ctx.db.ancestors(node.id)?;
-        let name = format_task_name(&task);
-        ctx.printer.interval_error(
-            &IntervalData {
-                interval: &interval,
+        let task = ctx.db.ancestors(node.id)?;
+        return Err(CliError::Task {
+            source: TaskError::CmdTaskInterval {
+                message: "Interval already running.".to_string(),
+                interval,
                 task,
-                title: IntervalData::default_title(),
             },
-            &"task already running.",
-        );
-        return Err(CliError::wrap(Box::new(TaskError::AlreadyRunning { name })));
+        });
     };
 
     let inteval = ctx.db.intervals().with_max(&Interval::begin_n())?;
     if inteval.is_none() {
-        ctx.printer.error(&"there is no priviosly started tasks.");
-        return Err(CliError::wrap(Box::new(TaskError::NoPrivios)));
+        return Err(CliError::Task {
+            source: TaskError::Cmd {
+                message: "There is no priviosly started tasks.".to_string(),
+            },
+        });
     }
 
     let mut interval = inteval.unwrap();

@@ -7,17 +7,12 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
         .cur_running()
         .map_err(|source| CliError::DB { source })?;
     if let Some((node, interval)) = res {
-        let task = &ctx.db.ancestors(node.id)?;
-        let name = format_task_name(task);
-        ctx.printer.interval_error(
-            &IntervalData {
-                interval: &interval,
-                task,
-                title: IntervalData::default_title(),
-            },
-            &"task already running.",
-        );
-        return Err(CliError::wrap(Box::new(TaskError::AlreadyRunning { name })));
+        let task = ctx.db.ancestors(node.id)?;
+        return Err(CliError::Task{ source: TaskError::CmdTaskInterval{
+            message: "Interval already running.".to_string(),
+            interval,
+            task,
+        }});
     };
 
     let path: Vec<&str> = ars.values_of("task").unwrap().collect();

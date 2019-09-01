@@ -2,9 +2,11 @@ use std::error::Error;
 use std::io;
 
 use config::ConfigError;
-use custom_error::custom_error;
+use custom_error::*;
 
 use orm::errors::*;
+use core::*;
+use super::format::*;
 
 pub type CliResult<T> = std::result::Result<T, CliError>;
 
@@ -16,6 +18,7 @@ custom_error! {pub CliError
     Cmd{message: String} = "{}",
     Unexpected{message: String} = "Unexpected behavior: {}",
     Wrapped{source: Box<dyn Error>} = "{:?}",
+    Task { source: TaskError } = "TaskError: {:?}",
 }
 
 impl CliError {
@@ -25,7 +28,13 @@ impl CliError {
 }
 
 custom_error! {pub TaskError
-    AlreadyRunning{name: String} = "task already running: {}.",
-    NoPrivios = "no priviosly started task",
-    NotRunnint = "no task running",
+    CmdTaskInterval{
+         message: String,
+         interval: Interval,
+         task: Vec<Node>} = @{
+             format!("Error: {}, task: {}, interval: {}",
+             message,
+             format_task_name(&task),
+             interval.to_string()) },
+    Cmd {message: String} = "{}",
 }

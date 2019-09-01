@@ -5,13 +5,14 @@ pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
         .db
         .cur_running()
         .map_err(|source| CliError::DB { source })?;
-    let (node, mut interval) = match res {
-        Some((n, i)) => (n, i),
-        None => {
-            ctx.printer.error("no task running.");
-            return Err(CliError::wrap(Box::new(TaskError::NotRunnint)));
-        }
-    };
+
+    if res.is_none() {
+        return Err(CliError::Task{source: TaskError::Cmd{
+            message: "No task running.".to_string(),
+        }});
+    }
+
+    let (node, mut interval) = res.unwrap();
 
     interval.end = Some(Utc::now());
     ctx.db.intervals().save(&interval)?;
