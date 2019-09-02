@@ -5,6 +5,7 @@ mod root;
 mod start;
 mod state;
 mod stop;
+mod reports;
 
 pub fn exec(ctx: &AppContext) -> CliResult<()> {
     match ctx.args.subcommand() {
@@ -12,6 +13,7 @@ pub fn exec(ctx: &AppContext) -> CliResult<()> {
         ("stop", Some(m)) => stop::exec(ctx, m),
         ("restart", Some(m)) => restart::exec(ctx, m),
         ("state", Some(m)) => state::exec(ctx, m),
+        ("report", Some(m)) => reports::exec(ctx, m),
         _ => root::exec(ctx, &ctx.args),
     }
 }

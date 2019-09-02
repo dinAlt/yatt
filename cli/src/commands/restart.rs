@@ -2,7 +2,7 @@ use crate::*;
 use core::{Interval, Node};
 use orm::statement::*;
 
-pub(crate) fn exec(ctx: &AppContext, _ars: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
     let res = ctx
         .db
         .cur_running()

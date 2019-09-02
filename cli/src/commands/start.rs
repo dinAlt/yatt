@@ -1,7 +1,7 @@
 use crate::*;
 use core::Interval;
 
-pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
     let res = ctx
         .db
         .cur_running()
@@ -15,7 +15,7 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
         }});
     };
 
-    let path: Vec<&str> = ars.values_of("task").unwrap().collect();
+    let path: Vec<&str> = args.values_of("task").unwrap().collect();
     let path = path.join(" ");
     let path: Vec<&str> = path.split("::").map(|t| t.trim()).collect();
 
