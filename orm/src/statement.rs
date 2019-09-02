@@ -6,17 +6,10 @@ pub struct Statement {
     pub sorts: Option<Vec<SortItem>>,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
+    pub distinct: bool,
 }
 
 impl Statement {
-    pub fn new() -> Self {
-        Statement {
-            filter: None,
-            sorts: None,
-            limit: None,
-            offset: None,
-        }
-    }
     pub fn filter(mut self, f: Filter) -> Self {
         self.filter = Some(f);
         self
@@ -33,6 +26,10 @@ impl Statement {
     }
     pub fn offset(mut self, v: usize) -> Self {
         self.offset = Some(v);
+        self
+    }
+    pub fn distinct(mut self) -> Self {
+        self.distinct = true;
         self
     }
 }
@@ -75,16 +72,19 @@ pub enum CmpOp {
     Ne(String, CmpVal),
 }
 pub fn filter(v: Filter) -> Statement {
-    Statement::new().filter(v)
+    Statement::default().filter(v)
 }
 pub fn sort(field: &str, direction: SortDir) -> Statement {
-    Statement::new().sort(field, direction)
+    Statement::default().sort(field, direction)
 }
 pub fn limit(v: usize) -> Statement {
-    Statement::new().limit(v)
+    Statement::default().limit(v)
 }
 pub fn offset(v: usize) -> Statement {
-    Statement::new().offset(v)
+    Statement::default().offset(v)
+}
+pub fn distinct() -> Statement {
+    Statement::default().distinct()
 }
 pub fn gt(field: String, value: impl Into<CmpVal>) -> Filter {
     Filter::CmpOp(CmpOp::Gt(field, value.into()))

@@ -71,9 +71,9 @@ impl Nodes {
         Nodes { con }
     }
 
-    fn select(&self, where_str: &str) -> SQLITEResult<Vec<Node>> {
+    fn select(&self, select_str: &str, where_str: &str) -> SQLITEResult<Vec<Node>> {
         let sql = format!(
-            "select
+            "{}
         id,
         parent_id,
         label,
@@ -81,6 +81,7 @@ impl Nodes {
         created,
         deleted
             from nodes {}",
+            select_str,
             where_str
         );
         let mut stmt = self.con.prepare(&sql)?;
@@ -140,7 +141,7 @@ impl Storage for Nodes {
     }
     fn all(&self) -> DBResult<Vec<Self::Item>> {
         let res = self
-            .select("where deleted = 0")
+            .select("select", "where deleted = 0")
             .map_err(|s| DBError::wrap(Box::new(s)))?;
 
         Ok(res)
@@ -155,7 +156,7 @@ impl Storage for Nodes {
     }
     fn by_statement(&self, statement: Statement) -> DBResult<Vec<Self::Item>> {
         let res = self
-            .select(&statement.build_where())
+            .select(&statement.build_select(), &statement.build_where())
             .map_err(|s| DBError::wrap(Box::new(s)))?;
 
         Ok(res)
@@ -170,15 +171,16 @@ impl Intervals {
     pub fn new(con: Rc<Connection>) -> Intervals {
         Intervals { con }
     }
-    fn select(&self, where_str: &str) -> SQLITEResult<Vec<Interval>> {
+    fn select(&self, select_str: &str, where_str: &str) -> SQLITEResult<Vec<Interval>> {
         let sql = format!(
-            "select
+            "{}
         id,
         node_id,
         begin,
         end,
         deleted
             from intervals {}",
+            select_str,
             where_str
         );
         let mut stmt = self.con.prepare(&sql)?;
@@ -234,7 +236,7 @@ impl Storage for Intervals {
     }
     fn all(&self) -> DBResult<Vec<Self::Item>> {
         let res = self
-            .select("where deleted = 0")
+            .select("select", "where deleted = 0")
             .map_err(|s| DBError::wrap(Box::new(s)))?;
 
         Ok(res)
@@ -252,16 +254,30 @@ impl Storage for Intervals {
     }
     fn by_statement(&self, statement: Statement) -> DBResult<Vec<Self::Item>> {
         let res = self
-            .select(&statement.build_where())
+            .select(&statement.build_select(), &statement.build_where())
             .map_err(|s| DBError::wrap(Box::new(s)))?;
 
         Ok(res)
     }
 }
 
+trait BuildSelect {
+    fn build_select(&self) -> String;
+}
+
+impl BuildSelect for Statement {
+    fn build_select(&self) -> String {
+        if self.distinct {
+            return "select distinct".to_string();
+        }
+        "select".to_string()
+    }
+}
+
 trait BuildWhere {
     fn build_where(&self) -> String;
 }
+
 impl BuildWhere for Statement {
     fn build_where(&self) -> String {
         let mut res = String::new();

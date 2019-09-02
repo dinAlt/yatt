@@ -11,11 +11,11 @@ pub fn identifiers_derive(input: TokenStream) -> TokenStream {
     impl_identifiers(&ast)
 }
 
-#[proc_macro_derive(Fieldlist)]
-pub fn field_list_derive(input: TokenStream) -> TokenStream {
-    let ast = syn::parse(input).unwrap();
-    impl_field_list(&ast)
-}
+// #[proc_macro_derive(StorageObject)]
+// pub fn field_list_derive(input: TokenStream) -> TokenStream {
+//     let ast = syn::parse(input).unwrap();
+//     impl_field_list(&ast)
+// }
 
 fn impl_identifiers(ast: &syn::DeriveInput) -> TokenStream {
     let name = &ast.ident;
@@ -60,34 +60,34 @@ fn get_identifiers_methods(
     res
 }
 
-fn impl_field_list(ast: &syn::DeriveInput) -> TokenStream {
-    let name = &ast.ident;
-    let c_name = format_ident!("{}_field_names", name);
-    let fields = match &ast.data {
-        syn::Data::Struct(s) => {
-            let mut res = vec![];
-            for f in s.fields.iter() {
-                if let syn::Visibility::Public(_) = f.vis {
-                    if let Some(ident) = &f.ident {
-                        res.push(format!("{}", ident));
-                    }
-                }
-            }
-            res
-        }
-        _ => unreachable!(),
-    };
-    let gen = quote! {
-        const #c_name: &'static [&'static str] = &[#(#fields),*];
-        impl FieldList for #name {
-            fn field_list() -> &'static [&'static str] {
-                unimplemented!()
-            }
-        }
-    };
+// fn impl_field_list(ast: &syn::DeriveInput) -> TokenStream {
+//     let name = &ast.ident;
+//     let c_name = format_ident!("{}_field_names", name);
+//     let fields = match &ast.data {
+//         syn::Data::Struct(s) => {
+//             let mut res = vec![];
+//             for f in s.fields.iter() {
+//                 if let syn::Visibility::Public(_) = f.vis {
+//                     if let Some(ident) = &f.ident {
+//                         res.push(format!("{}", ident));
+//                     }
+//                 }
+//             }
+//             res
+//         }
+//         _ => unreachable!(),
+//     };
+//     let gen = quote! {
+//         const #c_name: &'static [&'static str] = &[#(#fields),*];
+//         impl FieldList for #name {
+//             fn field_list() -> &'static [&'static str] {
+//                 unimplemented!()
+//             }
+//         }
+//     };
 
-    gen.into()
-}
+//     gen.into()
+// }
 
 #[cfg(test)]
 mod tests {
