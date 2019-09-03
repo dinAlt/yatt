@@ -18,7 +18,8 @@ custom_error! {pub CliError
     Cmd{message: String} = "{}",
     Unexpected{message: String} = "Unexpected behavior: {}",
     Wrapped{source: Box<dyn Error>} = "{:?}",
-    Task { source: TaskError } = "TaskError: {:?}",
+    Task { source: TaskError } = "Task error: {:?}",
+    Parse {message: String} = "Parse error: {}",
 }
 
 impl CliError {

@@ -8,6 +8,8 @@ description = "test"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+lazy_static = "1.4"
+regex = "1.2"
 custom_error = "1.7"
 termimad = "0.6"
 clap = "2.33"

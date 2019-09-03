@@ -1,5 +1,7 @@
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
+extern crate lazy_static;
 
 use std::fs;
 use std::path::PathBuf;
@@ -17,6 +19,8 @@ mod errors;
 mod format;
 mod print;
 mod style;
+mod report;
+mod parse;
 
 use errors::*;
 pub(crate) use format::*;
@@ -83,6 +87,7 @@ fn make_args<'a>(info: &CrateInfo) -> ArgMatches<'a> {
         .subcommand(SubCommand::with_name("stop").about("stops running task"))
         .subcommand(SubCommand::with_name("restart").about("restart last task"))
         .subcommand(SubCommand::with_name("state").about("show running state"))
+        .subcommand(SubCommand::with_name("report").about("show report"))
         .get_matches()
 }
 

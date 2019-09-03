@@ -81,8 +81,7 @@ impl Nodes {
         created,
         deleted
             from nodes {}",
-            select_str,
-            where_str
+            select_str, where_str
         );
         let mut stmt = self.con.prepare(&sql)?;
         let mut rows = stmt.query(NO_PARAMS)?;
@@ -180,9 +179,9 @@ impl Intervals {
         end,
         deleted
             from intervals {}",
-            select_str,
-            where_str
+            select_str, where_str
         );
+
         let mut stmt = self.con.prepare(&sql)?;
         let mut rows = stmt.query(NO_PARAMS)?;
         let mut res = Vec::new();
@@ -335,7 +334,10 @@ impl BuildWhere for CmpOp {
                 let sign = if let CmpVal::Null = v { "is" } else { "=" };
                 format!("{} {} {}", s, sign, v.build_where())
             }
-            CmpOp::Ne(s, v) => format!("{} <> {}", s, v.build_where()),
+            CmpOp::Ne(s, v) => {
+                let sign = if let CmpVal::Null = v { "is not" } else { "=" };
+                format!("{} {} {}", s, sign, v.build_where())
+            }
             CmpOp::Gt(s, v) => format!("{} > {}", s, v.build_where()),
             CmpOp::Lt(s, v) => format!("{} < {}", s, v.build_where()),
         }
