@@ -48,16 +48,15 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
         a[high].label.cmp(&b[high].label)
     });
 
-    dbg!(nodes
-        .iter()
-        .map(|v| format_task_name(&v))
-        .collect::<Vec<String>>());
+    // dbg!(nodes
+    //     .iter()
+    //     .map(|v| format_task_name(&v))
+    //     .collect::<Vec<String>>());
 
     let mut r = Report::new();
     r.push("Workhours");
     let mut old_path: &[Node] = &[];
     for nn in 0..nodes.len() {
-        dbg!("round");
         for i in 0.. {
             if i == old_path.len() || old_path[i].id != nodes[nn][i].id {
                 old_path = &nodes[nn][..];
