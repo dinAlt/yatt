@@ -82,9 +82,11 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         for i in 0.. {
             if i == old_path.len() || old_path[i].id != node[i].id {
                 old_path = &node[..];
-                if i == 0 && round > 1 && !sub_total.is_zero() {
-                    r.push(Row::SubTotal(vec![Cell::Duration(sub_total)]));
-                    sub_total = Duration::zero();
+                if i == 0 {
+                    if round > 1 && !sub_total.is_zero() {
+                        r.push(Row::SubTotal(vec![Cell::Duration(sub_total)]));
+                        sub_total = Duration::zero();
+                    }
                     round = 0;
                 }
                 push_path(
