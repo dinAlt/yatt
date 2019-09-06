@@ -15,14 +15,14 @@ use dirs;
 use termimad::*;
 
 mod commands;
+mod core;
 mod errors;
 mod format;
 mod parse;
 mod print;
 mod report;
-mod style;
-mod core;
 mod storage;
+mod style;
 
 use errors::*;
 pub(crate) use format::*;
@@ -94,21 +94,28 @@ fn make_args<'a>(info: &CrateInfo) -> ArgMatches<'a> {
                 .alias("status")
                 .about("show running state"),
         )
-        .subcommand(SubCommand::with_name("report")
-            .setting(AppSettings::ArgRequiredElseHelp)
-            .subcommand(SubCommand::with_name("total")
-                    .about("Total time for period (default - currernt day).")
-                    .arg(
-                        Arg::with_name("period")
-                        .short("p")
-                        .long("period")
-                        .help("report period")
-                        .takes_value(true)
-                        .multiple(true)
-                    )
+        .subcommand(
+            SubCommand::with_name("report")
+                .setting(AppSettings::ArgRequiredElseHelp)
+                .subcommand(
+                    SubCommand::with_name("total")
+                        .about("Total time for period (default - currernt day).")
+                        .arg(
+                            Arg::with_name("period")
+                                .short("p")
+                                .long("period")
+                                .help("report period")
+                                .takes_value(true)
+                                .multiple(true),
+                        ),
                 )
-                .about("show report"))
-            .get_matches()
+                .about("show report"),
+        )
+        .subcommand(
+            SubCommand::with_name("cancel")
+            .about("Cancel current interval.")
+        )
+        .get_matches()
 }
 
 fn app_dir(name: &str) -> CliResult<PathBuf> {
