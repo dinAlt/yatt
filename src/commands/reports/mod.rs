@@ -1,9 +1,11 @@
 use crate::*;
 
 mod root;
+mod total;
 
 pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
-    match ctx.args.subcommand() {
+    match args.subcommand() {
+        ("total", Some(m)) => total::exec(ctx, m),
         _ => root::exec(ctx, args),
     }
 }

@@ -95,16 +95,20 @@ fn make_args<'a>(info: &CrateInfo) -> ArgMatches<'a> {
                 .about("show running state"),
         )
         .subcommand(SubCommand::with_name("report")
-            .arg(
-                Arg::with_name("period")
-                .short("p")
-                .long("period")
-                .help("report period")
-                .takes_value(true)
-                .multiple(true)
-            )
-            .about("show report"))
-        .get_matches()
+            .setting(AppSettings::ArgRequiredElseHelp)
+            .subcommand(SubCommand::with_name("total")
+                    .about("Total time for period (default - currernt day).")
+                    .arg(
+                        Arg::with_name("period")
+                        .short("p")
+                        .long("period")
+                        .help("report period")
+                        .takes_value(true)
+                        .multiple(true)
+                    )
+                )
+                .about("show report"))
+            .get_matches()
 }
 
 fn app_dir(name: &str) -> CliResult<PathBuf> {
