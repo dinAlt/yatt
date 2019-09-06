@@ -1,6 +1,6 @@
 [package]
 name = "yatt_orm"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["dinAlt <dinalt2@gmail.com>"]
 edition = "2018"
 license = "MIT"
