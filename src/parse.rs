@@ -58,8 +58,7 @@ fn try_parse_date_time(s: &str) -> CliResult<DateTime<Utc>> {
 fn try_parse_date_part(s: &str) -> CliResult<Date<Local>> {
     lazy_static! {
         static ref RE_PARSE_DATE_PART: Regex = Regex::new(
-            r"^((?P<y>\d{4})-)?(?P<m>\d{1,2})-(?P<d>\d{1,2})|
-                (?P<dr>\d{1,2})\.(?P<mr>\d{1,2})(\.(?P<yr>\d{4}))?$"
+            r"^((?P<y>\d{4})-)?(?P<m>\d{1,2})-(?P<d>\d{1,2})|(?P<dr>\d{1,2})\.(?P<mr>\d{1,2})(\.(?P<yr>\d{4}))?$"
         )
         .unwrap();
     }
@@ -195,8 +194,7 @@ fn try_parse_period(s: &str, opts: &PeriodOpts) -> CliResult<(DateTime<Utc>, Dat
             let mo = o + n - 1;
             let mut yo = mo / 12;
             let mut mo = mo - yo * 12;
-            let mut month = 
-            if mo > now.month() {
+            let mut month = if mo > now.month() {
                 yo += 1;
                 mo -= now.month();
                 12 - mo
