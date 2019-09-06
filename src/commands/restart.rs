@@ -19,8 +19,12 @@ pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
         });
     };
 
-    let inteval = ctx.db.intervals().with_max(&Interval::begin_n())?;
-    if inteval.is_none() {
+    let interval = ctx.db.intervals().by_statement(
+        filter(ne(Interval::deleted_n(), 1))
+        .sort(&Interval::end_n(), SortDir::Descend)
+        .limit(1))?;
+
+    if interval.is_empty() {
         return Err(CliError::Task {
             source: TaskError::Cmd {
                 message: "There is no priviosly started tasks.".to_string(),
@@ -28,7 +32,7 @@ pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
         });
     }
 
-    let mut interval = inteval.unwrap();
+    let mut interval = interval.first().unwrap().to_owned();
     let now = Utc::now();
     interval.id = 0;
     interval.begin = now;

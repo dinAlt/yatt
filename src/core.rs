@@ -42,13 +42,16 @@ impl dyn DBRoot {
     }
 
     pub fn last_running(&self) -> DBResult<Option<(Node, Interval)>> {
-        let interval = self.intervals().with_max("end")?;
+        let interval = self.intervals().by_statement(
+            filter(ne(Interval::deleted_n(), 1))
+            .sort(&Interval::end_n(), SortDir::Descend)
+            .limit(1))?;
 
-        if interval.is_none() {
+        if interval.is_empty() {
             return Ok(None);
         }
 
-        let interval = interval.unwrap();
+        let interval = interval.first().unwrap();
 
         let node = self
             .nodes()
@@ -65,7 +68,7 @@ impl dyn DBRoot {
         }
 
         let node = node[0].clone();
-        Ok(Some((node, interval)))
+        Ok(Some((node, interval.to_owned())))
     }
 
     pub fn find_path(&self, path: &[&str]) -> DBResult<Vec<Node>> {

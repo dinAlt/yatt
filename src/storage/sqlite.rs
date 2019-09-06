@@ -83,6 +83,7 @@ impl Nodes {
             from nodes {}",
             select_str, where_str
         );
+
         let mut stmt = self.con.prepare(&sql)?;
         let mut rows = stmt.query(NO_PARAMS)?;
         let mut res = Vec::new();
@@ -120,9 +121,10 @@ impl Storage for Nodes {
                     "update nodes
                 set label = ?1,
                 closed = ?2,
-                parent_id = ?3
-                where id = ?4",
-                    params![node.label, node.closed, parent_id, id],
+                parent_id = ?3,
+                deleted = ?4
+                where id = ?5",
+                    params![node.label, node.closed, parent_id, id, node.deleted],
                 )
                 .map_err(|s| DBError::wrap(Box::new(s)))?;
             return Ok(node.id);
@@ -132,8 +134,9 @@ impl Storage for Nodes {
                 "insert into nodes (
                         label,
                         parent_id,
-                        created) values (?1, ?2, ?3)",
-                params![node.label, parent_id, Utc::now()],
+                        created, 
+                        deleted) values (?1, ?2, ?3, ?4)",
+                params![node.label, parent_id, Utc::now(), node.deleted],
             )
             .map_err(|s| DBError::wrap(Box::new(s)))?;
         Ok(usize::try_from(self.con.last_insert_rowid()).unwrap())
@@ -217,18 +220,19 @@ impl Storage for Intervals {
                     "update intervals
                 set node_id = ?1,
                 begin = ?2,
-                end = ?3
-                where id = ?4",
-                    params![node_id, interval.begin, interval.end, id],
+                end = ?3,
+                deleted = ?4
+                where id = ?5",
+                    params![node_id, interval.begin, interval.end, interval.deleted, id],
                 )
                 .map_err(|s| DBError::wrap(Box::new(s)))?;
             return Ok(interval.id);
         };
         self.con
             .execute(
-                "insert into intervals (node_id, begin, end) 
-                values (?1, ?2, ?3)",
-                params![node_id, interval.begin, interval.end],
+                "insert into intervals (node_id, begin, end, deleted) 
+                values (?1, ?2, ?3, ?4)",
+                params![node_id, interval.begin, interval.end, interval.deleted],
             )
             .map_err(|s| DBError::wrap(Box::new(s)))?;
         Ok(usize::try_from(self.con.last_insert_rowid()).unwrap())
@@ -335,7 +339,7 @@ impl BuildWhere for CmpOp {
                 format!("{} {} {}", s, sign, v.build_where())
             }
             CmpOp::Ne(s, v) => {
-                let sign = if let CmpVal::Null = v { "is not" } else { "=" };
+                let sign = if let CmpVal::Null = v { "is not" } else { "<>" };
                 format!("{} {} {}", s, sign, v.build_where())
             }
             CmpOp::Gt(s, v) => format!("{} > {}", s, v.build_where()),
