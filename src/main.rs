@@ -4,7 +4,7 @@ extern crate clap;
 use std::process::exit;
 
 fn main() {
-    if cli::run(cli::CrateInfo {
+    if yatt::run(yatt::CrateInfo {
         name: crate_name!(),
         version: crate_version!(),
         authors: crate_authors!(),

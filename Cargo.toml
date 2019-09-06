@@ -4,20 +4,35 @@ version = "0.1.0"
 authors = ["dinAlt <dinalt2@gmail.com>"]
 edition = "2018"
 description = "Yet Another Task Tracker"
+license = "MIT"
 
 [dependencies]
 clap = "2.33"
-cli = { version="0.1.0", path = "cli" }
+lazy_static = "1.4"
+regex = "1.2"
+custom_error = "1.7"
+termimad = "0.6"
+config = "0.9"
+serde = "1.0"
+dirs = "2.0"
+serde_derive = "1.0"
+chrono = "0.4.7"
+crossterm_style = "=0.3.3"
+yatt_orm = { version="0.1.0", path = "yatt_orm" }
 
+[dependencies.rusqlite]
+version = "0.20"
+default-features = false
+
+features = ["chrono", "bundled"]
 [workspace]
 members = [
-  "core",
-  "cli",
-  "storage/sqlite",
-  "orm",
-  "orm/orm_derive",
+  "yatt_orm",
+  "yatt_orm/yatt_orm_derive",
 ]
 
 [profile.release]
 lto = true
 codegen-units = 1
+
+

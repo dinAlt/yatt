@@ -1,0 +1,19 @@
+[package]
+name = "yatt_orm_derive"
+version = "0.1.0"
+authors = ["dinAlt <dinalt2@gmail.com>"]
+edition = "2018"
+license = "MIT"
+description = "Derive macro for yatt_orm"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0"
+quote = "1.0"
+proc-macro2 = { version = "1.0", default-features = false }
+
+[features]
+default = ["proc-macro"]
+proc-macro = ["proc-macro2/proc-macro"]
