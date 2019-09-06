@@ -4,7 +4,8 @@ version = "0.1.0"
 authors = ["dinAlt <dinalt2@gmail.com>"]
 edition = "2018"
 license = "MIT"
-description = "Derive macro for yatt_orm"
+description = "Yet Another Task Tracker"
+repository = "https://github.com/dinAlt/yatt/tree/master/yatt_orm/yatt_orm_derive"
 
 [lib]
 proc-macro = true

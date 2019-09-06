@@ -5,8 +5,9 @@ authors = ["dinAlt <dinalt2@gmail.com>"]
 edition = "2018"
 license = "MIT"
 description = "Yatt orm"
+repository = "https://github.com/dinAlt/yatt/tree/master/yatt_orm"
 
 [dependencies]
 chrono = "0.4.7"
 custom_error = "1.7"
-yatt_orm_derive = { version="0.1.0 path = "yatt_orm_derive" }
+yatt_orm_derive = { version="0.1.0", path = "yatt_orm_derive" }

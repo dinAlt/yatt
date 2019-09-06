@@ -5,6 +5,7 @@ authors = ["dinAlt <dinalt2@gmail.com>"]
 edition = "2018"
 description = "Yet Another Task Tracker"
 license = "MIT"
+repository = "https://github.com/dinAlt/yatt"
 
 [dependencies]
 clap = "2.33"
