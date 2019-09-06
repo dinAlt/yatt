@@ -17,16 +17,16 @@ use termimad::*;
 mod commands;
 mod errors;
 mod format;
-mod print;
-mod style;
-mod report;
 mod parse;
+mod print;
+mod report;
+mod style;
 
 use errors::*;
 pub(crate) use format::*;
+pub use print::*;
 use sqlite::DB;
 pub(crate) use style::*;
-pub use print::*;
 
 pub struct CrateInfo<'a> {
     pub name: &'a str,
@@ -75,6 +75,7 @@ fn make_args<'a>(info: &CrateInfo) -> ArgMatches<'a> {
         .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("start")
+                .alias("run")
                 .about("starts new task, or continues existing")
                 .setting(AppSettings::ArgRequiredElseHelp)
                 .arg(
@@ -86,8 +87,21 @@ fn make_args<'a>(info: &CrateInfo) -> ArgMatches<'a> {
         )
         .subcommand(SubCommand::with_name("stop").about("stops running task"))
         .subcommand(SubCommand::with_name("restart").about("restart last task"))
-        .subcommand(SubCommand::with_name("state").about("show running state"))
-        .subcommand(SubCommand::with_name("report").about("show report"))
+        .subcommand(
+            SubCommand::with_name("state")
+                .alias("status")
+                .about("show running state"),
+        )
+        .subcommand(SubCommand::with_name("report")
+            .arg(
+                Arg::with_name("period")
+                .short("p")
+                .long("period")
+                .help("report period")
+                .takes_value(true)
+                .multiple(true)
+            )
+            .about("show report"))
         .get_matches()
 }
 
@@ -129,7 +143,6 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
             Err(e) => return Err(CliError::DB { source: e }),
         }
     };
-    
     let app = AppContext {
         args: make_args(&info),
         conf,
@@ -147,18 +160,21 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
 }
 
 fn print_error(e: &CliError, p: Box<dyn Printer>) {
-    if let CliError::Task{source} = e {
+    if let CliError::Task { source } = e {
         match source {
-            TaskError::Cmd{message} => p.error(message),
-            TaskError::CmdTaskInterval{
+            TaskError::Cmd { message } => p.error(message),
+            TaskError::CmdTaskInterval {
                 message,
                 interval,
                 task,
-            } => p.interval_error(&IntervalData{
-                interval,
-                task,
-                title: IntervalData::default_title(),
-            }, message),
+            } => p.interval_error(
+                &IntervalData {
+                    interval,
+                    task,
+                    title: IntervalData::default_title(),
+                },
+                message,
+            ),
         }
         return;
     }

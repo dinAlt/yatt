@@ -1,7 +1,6 @@
 use super::*;
 use crate::report::*;
 use core::*;
-use termimad::*;
 
 const DEFAULT_INTERVAL_INFO_TITLE: &str = "Interval info:";
 
@@ -52,12 +51,6 @@ pub struct TermPrinter {
     style: AppStyle,
 }
 
-impl TermPrinter {
-    fn markdown(&self, m: &dyn Markdown) {
-        println!("{}", self.style.mad.text(&m.markdown(), self.style.screen_width));
-    }
-}
-
 impl Default for TermPrinter {
     fn default() -> Self {
         TermPrinter {
@@ -84,7 +77,7 @@ impl Printer for TermPrinter {
         println!("{}", &self.style.cmd.apply_to(d));
     }
     fn report(&self, r: &Report) {
-        self.markdown(r)
+        println!("{}", self.style.report.text(&r.markdown(), self.style.screen_width));
     }
 }
 

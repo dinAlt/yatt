@@ -11,13 +11,23 @@ pub(crate) fn format_task_name(t: &[Node]) -> String {
         .to_string()
 }
 
+#[derive(Debug, Default)]
+pub struct DateTimeOpts {
+    pub olways_long: bool,
+    pub no_string_now: bool,
+}
+
 pub(crate) fn format_datetime(dt: &DateTime<Utc>) -> String {
+    format_datetime_opts(dt, &DateTimeOpts::default())
+}
+
+pub(crate) fn format_datetime_opts(dt: &DateTime<Utc>, opts: &DateTimeOpts) -> String {
     let dt: DateTime<Local> = DateTime::from(*dt);
     let delta = Local::now() - dt;
 
-    let pattern = if delta < Duration::seconds(2) {
+    let pattern = if delta < Duration::seconds(2) && !opts.no_string_now {
         "just now"
-    } else if dt.date() == Local::today() {
+    } else if dt.date() == Local::today() && !opts.olways_long {
         "%H:%M:%S"
     } else {
         "%Y-%m-%d %H:%M:%S"

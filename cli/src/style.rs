@@ -1,4 +1,5 @@
 use crossterm_style::{Color, ObjectStyle};
+use std::convert::TryInto;
 use termimad::*;
 
 pub struct TaskStyle {
@@ -27,7 +28,7 @@ pub struct AppStyle {
     pub task: TaskStyle,
     pub error: ObjectStyle,
     pub cmd: ObjectStyle,
-    pub mad: MadSkin,
+    pub report: MadSkin,
     pub screen_width: Option<usize>,
 }
 
@@ -35,16 +36,24 @@ impl Default for AppStyle {
     fn default() -> Self {
         let cmd = ObjectStyle::default();
         let (width, _) = terminal_size();
-        let mut area = None;
-        if width < 4 {
-            area = Some(120);
-        }
+        let area: Option<usize> = if width < 4 {
+            Some(120)
+        } else {
+            Some(width.try_into().unwrap())
+        };
+        let mut report = MadSkin::default();
+        report.paragraph.align = Alignment::Center;
+        report.table.align = Alignment::Center;
+        report.bold.set_fg(Color::Yellow);
+        report.italic.object_style = ObjectStyle::default();
+        report.italic.set_fg(Color::Magenta);
+        report.inline_code.set_fgbg(Color::Reset, Color::Reset);
 
         AppStyle {
             task: TaskStyle::default(),
             error: ObjectStyle::default().fg(Color::Red),
             cmd,
-            mad: MadSkin::default(),
+            report,
             screen_width: area,
         }
     }

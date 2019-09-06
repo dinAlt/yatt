@@ -3,6 +3,7 @@ use crate::print::Markdown;
 use chrono::prelude::*;
 use chrono::Duration;
 
+#[derive(Default)]
 pub struct Report {
     rows: Vec<Row>,
 }
@@ -110,9 +111,17 @@ impl Markdown for Report {
 impl Markdown for Row {
     fn markdown(&self) -> String {
         match self {
-            Row::Header(v) => format!("## {}", v),
+            Row::Header(v) => format!("Report: **{}**", v),
             Row::Interval(b, e) => {
-                format!("Period: {} - {}", format_datetime(b), format_datetime(e))
+                let dtopts = DateTimeOpts {
+                    olways_long: true,
+                    no_string_now: true,
+                };
+                format!(
+                    "Period: *{} - {}*",
+                    format_datetime_opts(b, &dtopts),
+                    format_datetime_opts(e, &dtopts)
+                )
             }
             Row::Table(v) => format_cells(&v),
             Row::TableHeader(v) => format_header(&v),
@@ -129,13 +138,10 @@ impl Markdown for Row {
 }
 
 fn format_subtotal(cells: &[Cell]) -> String {
-    let mut aligns = "|-:".to_string();
-    let mut cols = "|Subtotal".to_string();
+    let mut aligns = "|".to_string();
+    let mut cols = "|total:".to_string();
     for c in cells {
-        aligns += match c {
-            Cell::String(_) | Cell::Duration(_) | Cell::DateTime(_) | Cell::Nested(_, _) => "|-",
-            _ => "|-:",
-        };
+        aligns += "|";
         cols += &format!("|*{}*", c.markdown());
     }
     format!("{}\n{}", aligns, cols)
@@ -149,7 +155,7 @@ fn format_total(cells: &[Cell]) -> String {
             Cell::String(_) | Cell::Duration(_) | Cell::DateTime(_) | Cell::Nested(_, _) => "|-",
             _ => "|-:",
         };
-        cols += &format!("|**{}**", c.markdown());
+        cols += &format!("|**{}**\n|-", c.markdown());
     }
     format!("{}\n{}", aligns, cols)
 }

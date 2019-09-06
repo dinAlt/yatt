@@ -3,16 +3,39 @@ use chrono::Duration;
 use core::*;
 use orm::statement::*;
 
-use crate::format::*;
-use crate::report::*;
 use crate::parse::*;
+use crate::report::*;
 use crate::*;
 
-pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
-    let intervals = ctx.db.intervals().by_statement(filter(and(
-        not(gt(Interval::deleted_n(), 0)),
-        ne(Interval::end_n(), CmpVal::Null),
-    )))?;
+pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
+    let (start, end) = if let Some(v) = args.values_of("period") {
+        parse_period(&v.collect::<Vec<_>>().join(" "), &PeriodOpts::default())?
+    } else {
+        (Local::today().and_hms(0, 0, 0).into(), Local::now().into())
+    };
+    let mut intervals = ctx.db.intervals().by_statement(
+        filter(and(
+            and(
+                or(
+                    gt(Interval::end_n(), start),
+                    eq(Interval::end_n(), CmpVal::Null),
+                ),
+                lt(Interval::begin_n(), end),
+            ),
+            not(gt(Interval::deleted_n(), 0)),
+        ))
+        .sort(&Interval::begin_n(), SortDir::Ascend),
+    )?;
+
+    if !intervals.is_empty() {
+        if intervals[0].begin < start {
+            intervals[0].begin = start.to_owned();
+        }
+        let high = intervals.len() - 1;
+        if intervals[high].end.is_none() || intervals[high].end.unwrap() > end {
+            intervals[high].end = Some(end.to_owned());
+        }
+    }
 
     let ids = intervals.iter().fold(vec![], |mut acc, v| {
         if acc.iter().find(|&&n| n == v.node_id.unwrap()).is_none() {
@@ -24,7 +47,7 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
     let mut nodes = vec![];
     for id in ids {
         let node = ctx.db.ancestors(id)?;
-        if !node.iter().fold(false, |acc, v| acc || v.deleted) {
+        if !node.iter().any(|v| v.deleted) {
             nodes.push(node);
         }
     }
@@ -38,7 +61,7 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
             }
         } - 1;
 
-        for i in 0..high + 1 {
+        for i in 0..=high {
             if a[i].label == b[i].label {
                 continue;
             }
@@ -48,22 +71,41 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
         a[high].label.cmp(&b[high].label)
     });
 
-    // dbg!(nodes
-    //     .iter()
-    //     .map(|v| format_task_name(&v))
-    //     .collect::<Vec<String>>());
-
     let mut r = Report::new();
-    r.push("Workhours");
+    r.push("Total time.");
+    r.push((start, end));
     let mut old_path: &[Node] = &[];
-    for nn in 0..nodes.len() {
+    let mut sub_total = Duration::zero();
+    let mut total = Duration::zero();
+    let mut round = 0;
+    for node in &nodes {
         for i in 0.. {
-            if i == old_path.len() || old_path[i].id != nodes[nn][i].id {
-                old_path = &nodes[nn][..];
-                push_path(&nodes[nn][i..], &mut r, &intervals, i);
+            if i == old_path.len() || old_path[i].id != node[i].id {
+                old_path = &node[..];
+                if i == 0 && round > 1 && !sub_total.is_zero() {
+                    r.push(Row::SubTotal(vec![Cell::Duration(sub_total)]));
+                    sub_total = Duration::zero();
+                    round = 0;
+                }
+                push_path(
+                    &node[i..],
+                    &mut r,
+                    &intervals,
+                    i,
+                    &mut sub_total,
+                    &mut total,
+                );
+                round+=1;
                 break;
             }
         }
+    }
+
+    if !sub_total.is_zero() && round > 1 {
+        r.push(Row::SubTotal(vec![Cell::Duration(sub_total)]));
+    }
+    if !total.is_zero() {
+        r.push(Row::Total(vec![Cell::Duration(total)]));
     }
 
     ctx.printer.report(&r);
@@ -71,13 +113,25 @@ pub(crate) fn exec(ctx: &AppContext, ars: &ArgMatches) -> CliResult<()> {
     Ok(())
 }
 
-fn push_path(pth: &[Node], rep: &mut Report, ints: &[Interval], pad: usize) {
+fn push_path(
+    pth: &[Node],
+    rep: &mut Report,
+    ints: &[Interval],
+    pad: usize,
+    sub_total: &mut Duration,
+    total: &mut Duration,
+) {
     let mut pad = pad;
     for n in pth {
-        let wh = ints
-            .iter()
-            .filter(|v| v.node_id.unwrap() == n.id)
-            .fold(Duration::zero(), |acc, v| acc + (v.end.unwrap() - v.begin));
+        let wh = Duration::seconds(
+            ints.iter()
+                .filter(|v| v.node_id.unwrap() == n.id)
+                .fold(Duration::zero(), |acc, v| acc + (v.end.unwrap() - v.begin))
+                .num_seconds(),
+        );
+        *sub_total = *sub_total + wh;
+        *total = *total + wh;
+
         let mut row = vec![];
         if pad == 0 {
             row.push(Cell::String(n.label.to_owned()));
@@ -98,4 +152,3 @@ fn push_path(pth: &[Node], rep: &mut Report, ints: &[Interval], pad: usize) {
         pad += 1;
     }
 }
-
