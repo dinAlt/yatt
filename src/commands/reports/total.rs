@@ -1,4 +1,5 @@
 use chrono::Duration;
+use std::cmp::Ordering;
 
 use crate::core::*;
 use yatt_orm::statement::*;
@@ -26,7 +27,6 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         ))
         .sort(&Interval::begin_n(), SortDir::Ascend),
     )?;
-
     if !intervals.is_empty() {
         if intervals[0].begin < start {
             intervals[0].begin = start.to_owned();
@@ -68,7 +68,12 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
             return a[i].label.cmp(&(b[i].label));
         }
 
-        a[high].label.cmp(&b[high].label)
+        let res = a[high].label.cmp(&b[high].label);
+        if let Ordering::Equal = res {
+           return a.len().cmp(&b.len())
+        }
+
+        res
     });
 
     let mut r = Report::new();

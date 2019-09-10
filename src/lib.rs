@@ -108,8 +108,8 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
     skin.quote_mark.set_fg(Yellow);
     let mut conf = parse_config(&base_path)?;
 
-    #[cfg(debug_assertions)]
-    debug_config(&mut conf);
+    // #[cfg(debug_assertions)]
+    // debug_config(&mut conf);
 
     let db = {
         match DB::new(base_path.join(&conf.db_path)) {
