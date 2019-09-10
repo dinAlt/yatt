@@ -1,5 +1,5 @@
-use crate::*;
 use crate::core::Interval;
+use crate::*;
 
 pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
     let res = ctx
@@ -8,11 +8,13 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         .map_err(|source| CliError::DB { source })?;
     if let Some((node, interval)) = res {
         let task = ctx.db.ancestors(node.id)?;
-        return Err(CliError::Task{ source: TaskError::CmdTaskInterval{
-            message: "Interval already running.".to_string(),
-            interval,
-            task,
-        }});
+        return Err(CliError::Task {
+            source: TaskError::CmdTaskInterval {
+                message: "Interval already running.".to_string(),
+                interval,
+                task,
+            },
+        });
     };
 
     let path: Vec<&str> = args.values_of("task").unwrap().collect();
@@ -39,4 +41,19 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
     });
 
     Ok(())
+}
+
+pub fn register<'a>(app: App<'a, 'a>) -> App {
+    app.subcommand(
+        SubCommand::with_name("start")
+            .alias("run")
+            .about("starts new task, or continues existing")
+            .setting(AppSettings::ArgRequiredElseHelp)
+            .arg(
+                Arg::with_name("task")
+                    .help("task name with nested tasks, delimited by \"::\"")
+                    .required(true)
+                    .multiple(true),
+            ),
+    )
 }

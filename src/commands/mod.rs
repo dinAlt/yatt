@@ -6,6 +6,7 @@ mod start;
 mod state;
 mod stop;
 mod reports;
+mod delete;
 mod cancel;
 
 pub fn exec(ctx: &AppContext) -> CliResult<()> {
@@ -18,4 +19,17 @@ pub fn exec(ctx: &AppContext) -> CliResult<()> {
         ("cancel", Some(m)) => cancel::exec(ctx, m),
         _ => root::exec(ctx, &ctx.args),
     }
+}
+
+pub fn register<'a>(app: App<'a, 'a>) -> App {
+    let app = root::register(app);
+    let app = start::register(app);
+    let app = stop::register(app);
+    let app = restart::register(app);
+    let app = state::register(app);
+    let app = cancel::register(app);
+    let app = reports::register(app);
+    let app = delete::register(app);
+
+    app
 }

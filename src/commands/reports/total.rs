@@ -97,7 +97,7 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
                     &mut sub_total,
                     &mut total,
                 );
-                round+=1;
+                round += 1;
                 break;
             }
         }
@@ -153,4 +153,19 @@ fn push_path(
         }
         pad += 1;
     }
+}
+
+pub fn register<'a>(app: App<'a, 'a>) -> App {
+    app.subcommand(
+        SubCommand::with_name("total")
+            .about("Total time for period (default - currernt day).")
+            .arg(
+                Arg::with_name("period")
+                    .short("p")
+                    .long("period")
+                    .help("report period")
+                    .takes_value(true)
+                    .multiple(true),
+            ),
+    )
 }

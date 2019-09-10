@@ -69,53 +69,14 @@ fn parse_config(base_path: &PathBuf) -> CliResult<AppConfig> {
     }
 }
 
-fn make_args<'a>(info: &CrateInfo) -> ArgMatches<'a> {
-    App::new(info.name)
+fn make_args<'a>(info: &CrateInfo<'a>) -> ArgMatches<'a> {
+    let app = App::new(info.name)
         .version(info.version)
         .author(info.authors)
         .about(info.description)
-        .setting(AppSettings::ArgRequiredElseHelp)
-        .subcommand(
-            SubCommand::with_name("start")
-                .alias("run")
-                .about("starts new task, or continues existing")
-                .setting(AppSettings::ArgRequiredElseHelp)
-                .arg(
-                    Arg::with_name("task")
-                        .help("task name with nested tasks, delimited by \"::\"")
-                        .required(true)
-                        .multiple(true),
-                ),
-        )
-        .subcommand(SubCommand::with_name("stop").about("stops running task"))
-        .subcommand(SubCommand::with_name("restart").about("restart last task"))
-        .subcommand(
-            SubCommand::with_name("state")
-                .alias("status")
-                .about("show running state"),
-        )
-        .subcommand(
-            SubCommand::with_name("report")
-                .setting(AppSettings::ArgRequiredElseHelp)
-                .subcommand(
-                    SubCommand::with_name("total")
-                        .about("Total time for period (default - currernt day).")
-                        .arg(
-                            Arg::with_name("period")
-                                .short("p")
-                                .long("period")
-                                .help("report period")
-                                .takes_value(true)
-                                .multiple(true),
-                        ),
-                )
-                .about("show report"),
-        )
-        .subcommand(
-            SubCommand::with_name("cancel")
-            .about("Cancel current interval.")
-        )
-        .get_matches()
+        .setting(AppSettings::ArgRequiredElseHelp);
+    
+    commands::register(app).get_matches()
 }
 
 fn app_dir(name: &str) -> CliResult<PathBuf> {

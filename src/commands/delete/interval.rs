@@ -28,5 +28,9 @@ pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
     //     },
     // });
 
-    Ok(())
+   unimplemented!()
+}
+
+pub fn register<'a>(app: App<'a, 'a>) -> App {
+    app
 }

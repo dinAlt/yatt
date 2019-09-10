@@ -9,3 +9,14 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         _ => root::exec(ctx, args),
     }
 }
+
+pub fn register<'a>(app: App<'a, 'a>) -> App {
+    let sub = SubCommand::with_name("report")
+        .setting(AppSettings::ArgRequiredElseHelp)
+        .about("show selected report");
+    let sub = root::register(sub);
+    let sub = total::register(sub);
+    let app = app.subcommand(sub);
+
+    app
+}
