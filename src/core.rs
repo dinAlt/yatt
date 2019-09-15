@@ -185,6 +185,7 @@ pub struct Interval {
     pub begin: DateTime<Utc>,
     pub end: Option<DateTime<Utc>>,
     pub deleted: bool,
+    pub closed: bool,
 }
 
 impl ToString for Interval {

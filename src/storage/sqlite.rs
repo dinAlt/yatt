@@ -44,7 +44,8 @@ impl DB {
             node_id integer,
              begin integer NOT NULL,
              end integer,
-             deleted integer default 0
+             deleted integer default 0,
+             closed integer default 0
              )",
             NO_PARAMS,
         )?;
@@ -180,7 +181,8 @@ impl Intervals {
         node_id,
         begin,
         end,
-        deleted
+        deleted,
+        closed
             from intervals {}",
             select_str, where_str
         );
@@ -202,6 +204,7 @@ impl Intervals {
                 begin: row.get(2)?,
                 end: row.get(3)?,
                 deleted: row.get(4)?,
+                closed: row.get(5)?,
             })
         }
         SQLITEResult::Ok(res)
@@ -221,18 +224,24 @@ impl Storage for Intervals {
                 set node_id = ?1,
                 begin = ?2,
                 end = ?3,
-                deleted = ?4
-                where id = ?5",
-                    params![node_id, interval.begin, interval.end, interval.deleted, id],
+                deleted = ?4,
+                closed = ?5
+                where id = ?6",
+                    params![node_id, 
+                    interval.begin,
+                    interval.end,
+                    interval.deleted,
+                    interval.closed,
+                    id],
                 )
                 .map_err(|s| DBError::wrap(Box::new(s)))?;
             return Ok(interval.id);
         };
         self.con
             .execute(
-                "insert into intervals (node_id, begin, end, deleted) 
-                values (?1, ?2, ?3, ?4)",
-                params![node_id, interval.begin, interval.end, interval.deleted],
+                "insert into intervals (node_id, begin, end, deleted, closed) 
+                values (?1, ?2, ?3, ?4, ?5)",
+                params![node_id, interval.begin, interval.end, interval.deleted, interval.closed],
             )
             .map_err(|s| DBError::wrap(Box::new(s)))?;
         Ok(usize::try_from(self.con.last_insert_rowid()).unwrap())

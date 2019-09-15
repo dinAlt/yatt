@@ -16,7 +16,6 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
         .about("show selected report");
     let sub = root::register(sub);
     let sub = total::register(sub);
-    let app = app.subcommand(sub);
 
-    app
+    app.subcommand(sub)
 }

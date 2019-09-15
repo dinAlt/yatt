@@ -41,6 +41,7 @@ pub trait Printer {
     fn interval_error(&self, d: &IntervalData, e: &str);
     fn cmd(&self, d: &str);
     fn report(&self, r: &Report);
+    fn prompt(&self, p: &str);
 }
 
 pub trait Markdown {
@@ -78,6 +79,9 @@ impl Printer for TermPrinter {
     }
     fn report(&self, r: &Report) {
         println!("{}", self.style.report.text(&r.markdown(), self.style.screen_width));
+    }
+    fn prompt(&self, p: &str) {
+        println!("{}", p);
     }
 }
 

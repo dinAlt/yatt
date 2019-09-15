@@ -17,7 +17,7 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         });
     };
 
-    let path: Vec<&str> = args.values_of("task").unwrap().collect();
+    let path: Vec<&str> = args.values_of("TASK").unwrap().collect();
     let path = path.join(" ");
     let path: Vec<&str> = path.split("::").map(|t| t.trim()).collect();
 
@@ -28,6 +28,7 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         begin: Utc::now(),
         end: None,
         deleted: false,
+        closed: false,
     };
     ctx.db.intervals().save(&interval)?;
 
@@ -47,11 +48,11 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
     app.subcommand(
         SubCommand::with_name("start")
             .alias("run")
-            .about("starts new task, or continues existing")
+            .about("Starts new task, or continues existing")
             .setting(AppSettings::ArgRequiredElseHelp)
             .arg(
-                Arg::with_name("task")
-                    .help("task name with nested tasks, delimited by \"::\"")
+                Arg::with_name("TASK")
+                    .help("Task name with nested tasks, delimited by \"::\"")
                     .required(true)
                     .multiple(true),
             ),

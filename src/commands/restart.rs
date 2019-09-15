@@ -20,7 +20,7 @@ pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
     };
 
     let interval = ctx.db.intervals().by_statement(
-        filter(ne(Interval::deleted_n(), 1))
+        filter(and(ne(Interval::deleted_n(), 1), ne(Interval::closed_n(), 1)))
         .sort(&Interval::end_n(), SortDir::Descend)
         .limit(1))?;
 

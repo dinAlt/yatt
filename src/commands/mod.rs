@@ -17,6 +17,7 @@ pub fn exec(ctx: &AppContext) -> CliResult<()> {
         ("state", Some(m)) => state::exec(ctx, m),
         ("report", Some(m)) => reports::exec(ctx, m),
         ("cancel", Some(m)) => cancel::exec(ctx, m),
+        ("delete", Some(m)) => delete::exec(ctx, m),
         _ => root::exec(ctx, &ctx.args),
     }
 }
@@ -29,7 +30,6 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
     let app = state::register(app);
     let app = cancel::register(app);
     let app = reports::register(app);
-    let app = delete::register(app);
 
-    app
+    delete::register(app)
 }
