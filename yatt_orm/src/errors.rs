@@ -1,5 +1,5 @@
-use std::error::Error;
 use custom_error::custom_error;
+use std::error::Error;
 
 pub type DBResult<T> = Result<T, DBError>;
 
@@ -11,6 +11,6 @@ custom_error! {pub DBError
 
 impl DBError {
     pub fn wrap(e: Box<dyn Error>) -> DBError {
-        DBError::Wrapped{source: e}
+        DBError::Wrapped { source: e }
     }
 }

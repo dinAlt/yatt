@@ -1,5 +1,5 @@
-use crate::*;
 use crate::core::{Interval, Node};
+use crate::*;
 use yatt_orm::statement::*;
 
 pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
@@ -20,9 +20,13 @@ pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
     };
 
     let interval = ctx.db.intervals().by_statement(
-        filter(and(ne(Interval::deleted_n(), 1), ne(Interval::closed_n(), 1)))
+        filter(and(
+            ne(Interval::deleted_n(), 1),
+            ne(Interval::closed_n(), 1),
+        ))
         .sort(&Interval::end_n(), SortDir::Descend)
-        .limit(1))?;
+        .limit(1),
+    )?;
 
     if interval.is_empty() {
         return Err(CliError::Task {

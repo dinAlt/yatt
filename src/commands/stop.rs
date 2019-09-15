@@ -7,9 +7,11 @@ pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
         .map_err(|source| CliError::DB { source })?;
 
     if res.is_none() {
-        return Err(CliError::Task{source: TaskError::Cmd{
-            message: "No task running.".to_string(),
-        }});
+        return Err(CliError::Task {
+            source: TaskError::Cmd {
+                message: "No task running.".to_string(),
+            },
+        });
     }
 
     let (node, mut interval) = res.unwrap();

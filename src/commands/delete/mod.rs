@@ -12,15 +12,15 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
 
 pub fn register<'a>(app: App<'a, 'a>) -> App {
     let sub = SubCommand::with_name("delete")
-            .setting(AppSettings::ArgRequiredElseHelp)
-            .alias("remove")
-            .alias("rm")
-            .about("Delete entity")
-            .arg(
-                Arg::with_name("yes")
+        .setting(AppSettings::ArgRequiredElseHelp)
+        .alias("remove")
+        .alias("rm")
+        .about("Delete entity")
+        .arg(
+            Arg::with_name("yes")
                 .short("y")
-                .help("Delete with no prompt")
-            );
+                .help("Delete with no prompt"),
+        );
     let sub = root::register(sub);
     let sub = interval::register(sub);
 

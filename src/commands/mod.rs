@@ -1,13 +1,13 @@
 use crate::*;
 
+mod cancel;
+mod delete;
+mod reports;
 mod restart;
 mod root;
 mod start;
 mod state;
 mod stop;
-mod reports;
-mod delete;
-mod cancel;
 
 pub fn exec(ctx: &AppContext) -> CliResult<()> {
     match ctx.args.subcommand() {

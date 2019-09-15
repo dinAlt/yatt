@@ -75,7 +75,7 @@ fn make_args<'a>(info: &CrateInfo<'a>) -> ArgMatches<'a> {
         .author(info.authors)
         .about(info.description)
         .setting(AppSettings::ArgRequiredElseHelp);
-    
+
     commands::register(app).get_matches()
 }
 

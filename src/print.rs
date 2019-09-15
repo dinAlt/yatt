@@ -1,6 +1,6 @@
+use self::core::*;
 use super::*;
 use crate::report::*;
-use self::core::*;
 
 const DEFAULT_INTERVAL_INFO_TITLE: &str = "Interval info:";
 
@@ -78,7 +78,12 @@ impl Printer for TermPrinter {
         println!("{}", &self.style.cmd.apply_to(d));
     }
     fn report(&self, r: &Report) {
-        println!("{}", self.style.report.text(&r.markdown(), self.style.screen_width));
+        println!(
+            "{}",
+            self.style
+                .report
+                .text(&r.markdown(), self.style.screen_width)
+        );
     }
     fn prompt(&self, p: &str) {
         println!("{}", p);

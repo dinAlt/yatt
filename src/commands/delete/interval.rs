@@ -1,6 +1,6 @@
-use crossterm_input::input;
 use crate::core::*;
 use crate::*;
+use crossterm_input::input;
 use std::convert::TryInto;
 use yatt_orm::{statement::*, DBError};
 
@@ -19,10 +19,10 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         let intervals = ctx.db.intervals().by_statement(
             filter(and(
                 ne(Interval::deleted_n(), 1),
-                ne(Interval::end_n(), CmpVal::Null)
-                ))
-                .sort(&Interval::begin_n(), SortDir::Descend)
-                .limit(offset),
+                ne(Interval::end_n(), CmpVal::Null),
+            ))
+            .sort(&Interval::begin_n(), SortDir::Descend)
+            .limit(offset),
         )?;
         if intervals.len() < offset {
             return Err(CliError::Cmd {
@@ -55,10 +55,10 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
 
     interval.deleted = true;
     let interval_data = IntervalData {
-                interval: &interval,
-                title: IntervalData::default_title(),
-                task: &task,
-            };
+        interval: &interval,
+        title: IntervalData::default_title(),
+        task: &task,
+    };
 
     if no_prompt {
         ctx.db
@@ -82,8 +82,7 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
                 .save(&interval)
                 .map_err(|source| CliError::DB { source })?;
             ctx.printer.cmd("Successfully deleted...")
-            } else {
-
+        } else {
             ctx.printer.cmd("Cancelled...")
         }
     }

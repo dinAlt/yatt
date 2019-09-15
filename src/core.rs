@@ -44,8 +44,9 @@ impl dyn DBRoot {
     pub fn last_running(&self) -> DBResult<Option<(Node, Interval)>> {
         let interval = self.intervals().by_statement(
             filter(ne(Interval::deleted_n(), 1))
-            .sort(&Interval::end_n(), SortDir::Descend)
-            .limit(1))?;
+                .sort(&Interval::end_n(), SortDir::Descend)
+                .limit(1),
+        )?;
 
         if interval.is_empty() {
             return Ok(None);

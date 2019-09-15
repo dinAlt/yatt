@@ -227,12 +227,14 @@ impl Storage for Intervals {
                 deleted = ?4,
                 closed = ?5
                 where id = ?6",
-                    params![node_id, 
-                    interval.begin,
-                    interval.end,
-                    interval.deleted,
-                    interval.closed,
-                    id],
+                    params![
+                        node_id,
+                        interval.begin,
+                        interval.end,
+                        interval.deleted,
+                        interval.closed,
+                        id
+                    ],
                 )
                 .map_err(|s| DBError::wrap(Box::new(s)))?;
             return Ok(interval.id);
@@ -241,7 +243,13 @@ impl Storage for Intervals {
             .execute(
                 "insert into intervals (node_id, begin, end, deleted, closed) 
                 values (?1, ?2, ?3, ?4, ?5)",
-                params![node_id, interval.begin, interval.end, interval.deleted, interval.closed],
+                params![
+                    node_id,
+                    interval.begin,
+                    interval.end,
+                    interval.deleted,
+                    interval.closed
+                ],
             )
             .map_err(|s| DBError::wrap(Box::new(s)))?;
         Ok(usize::try_from(self.con.last_insert_rowid()).unwrap())

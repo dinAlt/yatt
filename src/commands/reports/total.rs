@@ -70,7 +70,7 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
 
         let res = a[high].label.cmp(&b[high].label);
         if let Ordering::Equal = res {
-           return a.len().cmp(&b.len())
+            return a.len().cmp(&b.len());
         }
 
         res
