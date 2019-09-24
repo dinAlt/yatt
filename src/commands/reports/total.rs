@@ -90,8 +90,8 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
                 if i == 0 {
                     if round > 1 && !sub_total.is_zero() {
                         r.push(Row::SubTotal(vec![Cell::Duration(sub_total)]));
-                        sub_total = Duration::zero();
                     }
+                    sub_total = Duration::zero();
                     round = 0;
                 }
                 push_path(

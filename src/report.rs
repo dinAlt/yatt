@@ -139,7 +139,7 @@ impl Markdown for Row {
 
 fn format_subtotal(cells: &[Cell]) -> String {
     let mut aligns = "|".to_string();
-    let mut cols = "|total:".to_string();
+    let mut cols = "|".to_string();
     for c in cells {
         aligns += "|";
         cols += &format!("|*{}*", c.markdown());
