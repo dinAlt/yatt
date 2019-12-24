@@ -1,8 +1,12 @@
+use chrono::Utc;
+use uuid::Uuid;
+
 pub mod errors;
 pub mod statement;
-pub use yatt_orm_derive::*;
 
 pub use errors::*;
+pub use yatt_orm_derive::*;
+
 use statement::*;
 
 pub type BoxStorage<T> = Box<dyn Storage<Item = T>>;
@@ -39,9 +43,39 @@ impl<T: Clone> dyn Storage<Item = T> {
     }
 }
 
-// pub trait StorageObject {
-//     fn field_list() -> &'static [&'static str];
-// }
+pub enum SyncActionType {
+    Create,
+    Update,
+    Delete,
+}
+
+impl From<usize> for SyncActionType {
+    fn from(u: usize) -> SyncActionType {
+        match u {
+            0 => SyncActionType::Create,
+            1 => SyncActionType::Update,
+            2 => SyncActionType::Delete,
+            _ => panic!("wrong argument value"),
+        }
+    }
+}
+
+pub struct SyncAction {
+    pub date: Utc,
+    pub uuid: Uuid,
+    pub action_type: SyncActionType,
+}
+
+pub struct SyncEntity {
+    pub entity_type: String,
+    pub id: usize,
+    pub uuid: Uuid,
+}
+
+pub trait SyncStorage {
+    fn push_entity(e: &SyncEntity) -> DBResult<()>;
+    fn push_action(a: &SyncAction) -> DBResult<()>;
+}
 
 #[cfg(test)]
 mod tests {
