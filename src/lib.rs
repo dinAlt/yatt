@@ -5,6 +5,7 @@ extern crate lazy_static;
 
 use std::fs;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use chrono::prelude::*;
 use clap;
@@ -18,6 +19,8 @@ mod commands;
 mod core;
 mod errors;
 mod format;
+mod history;
+mod history_storage;
 mod parse;
 mod print;
 mod report;
@@ -26,6 +29,7 @@ mod style;
 
 use errors::*;
 pub(crate) use format::*;
+use history::DBWatcher;
 pub use print::*;
 use storage::sqlite::DB;
 pub(crate) use style::*;
@@ -48,12 +52,16 @@ pub struct AppContext<'a> {
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
     pub db_path: String,
+    pub history_db_path: String,
 }
-
 impl Default for AppConfig {
     fn default() -> Self {
         let db_path = String::from("yatt.db");
-        AppConfig { db_path }
+        let history_db_path = String::from("yatt_history.db");
+        AppConfig {
+            db_path,
+            history_db_path,
+        }
     }
 }
 
@@ -111,18 +119,29 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
     #[cfg(debug_assertions)]
     debug_config(&mut conf);
 
-    let db = {
+    let mut db: Box<dyn core::DBRoot> = Box::new({
         match DB::new(base_path.join(&conf.db_path)) {
             Ok(db) => db,
             Err(e) => return Err(CliError::DB { source: e }),
         }
-    };
+    });
+
+    let history_db_path = base_path.join(&conf.history_db_path);
+    if history_db_path.exists() {
+        let hs = Rc::new({
+            match history_storage::sqlite::DB::new(history_db_path) {
+                Ok(db) => db,
+                Err(e) => return Err(CliError::DB { source: e }),
+            }
+        });
+        db = Box::new(DBWatcher::new(db, hs));
+    }
     let app = AppContext {
         args: make_args(&info),
         conf,
         root: base_path,
         printer: Box::new(TermPrinter::default()),
-        db: Box::new(db),
+        db,
     };
     let res = commands::exec(&app);
 

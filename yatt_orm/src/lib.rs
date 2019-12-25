@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 pub mod errors;
@@ -43,38 +43,45 @@ impl<T: Clone> dyn Storage<Item = T> {
     }
 }
 
-pub enum SyncActionType {
+#[derive(Clone, Copy)]
+pub enum HistoryRecordType {
     Create,
     Update,
     Delete,
 }
 
-impl From<usize> for SyncActionType {
-    fn from(u: usize) -> SyncActionType {
+impl From<usize> for HistoryRecordType {
+    fn from(u: usize) -> HistoryRecordType {
         match u {
-            0 => SyncActionType::Create,
-            1 => SyncActionType::Update,
-            2 => SyncActionType::Delete,
+            0 => HistoryRecordType::Create,
+            1 => HistoryRecordType::Update,
+            2 => HistoryRecordType::Delete,
             _ => panic!("wrong argument value"),
         }
     }
 }
 
-pub struct SyncAction {
-    pub date: Utc,
-    pub uuid: Uuid,
-    pub action_type: SyncActionType,
+impl From<HistoryRecordType> for isize {
+    fn from(r: HistoryRecordType) -> isize {
+        match r {
+            HistoryRecordType::Create => 0,
+            HistoryRecordType::Update => 1,
+            HistoryRecordType::Delete => 2,
+        }
+    }
 }
 
-pub struct SyncEntity {
+pub struct HistoryRecord {
+    pub date: DateTime<Utc>,
+    pub uuid: Uuid,
+    pub record_type: HistoryRecordType,
     pub entity_type: String,
-    pub id: usize,
-    pub uuid: Uuid,
+    pub entity_id: usize,
 }
 
-pub trait SyncStorage {
-    fn push_entity(e: &SyncEntity) -> DBResult<()>;
-    fn push_action(a: &SyncAction) -> DBResult<()>;
+pub trait HistoryStorage {
+    fn push_record(&self, r: HistoryRecord) -> DBResult<()>;
+    fn get_entity_guid(&self, id: usize, entity_type: &str) -> DBResult<Uuid>;
 }
 
 #[cfg(test)]

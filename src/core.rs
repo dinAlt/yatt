@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 
 use chrono::prelude::*;
 
+use crate::history::LocalUnique;
 use yatt_orm::errors::{DBError, DBResult};
 use yatt_orm::statement::*;
 use yatt_orm::{BoxStorage, Identifiers};
@@ -179,6 +180,12 @@ impl ToString for Node {
     }
 }
 
+impl LocalUnique for Node {
+    fn get_local_id(&self) -> usize {
+        self.id
+    }
+}
+
 #[derive(Debug, Clone, Identifiers)]
 pub struct Interval {
     pub id: usize,
@@ -196,6 +203,12 @@ impl ToString for Interval {
             None => "never".to_string(),
         };
         format!("[started: {} stopped: {}]", self.begin, end)
+    }
+}
+
+impl LocalUnique for Interval {
+    fn get_local_id(&self) -> usize {
+        self.id
     }
 }
 
