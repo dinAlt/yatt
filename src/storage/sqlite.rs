@@ -338,13 +338,14 @@ impl BuildWhere for SortDir {
         }
     }
 }
-impl BuildWhere for CmpVal {
+impl BuildWhere for FieldVal {
     fn build_where(&self) -> String {
         match self {
-            CmpVal::Usize(u) => u.to_string(),
-            CmpVal::DateTime(d) => format!("\"{}\"", d.to_rfc3339()),
-            CmpVal::String(s) => format!("\"{}\"", s.to_string()),
-            CmpVal::Null => String::from("null"),
+            FieldVal::Usize(u) => u.to_string(),
+            FieldVal::DateTime(d) => format!("\"{}\"", d.to_rfc3339()),
+            FieldVal::String(s) => format!("\"{}\"", s.to_string()),
+            FieldVal::Bool(b) => (if *b { 1 } else { 0 }).to_string(),
+            FieldVal::Null => String::from("null"),
         }
     }
 }
@@ -352,11 +353,15 @@ impl BuildWhere for CmpOp {
     fn build_where(&self) -> String {
         match self {
             CmpOp::Eq(s, v) => {
-                let sign = if let CmpVal::Null = v { "is" } else { "=" };
+                let sign = if let FieldVal::Null = v { "is" } else { "=" };
                 format!("{} {} {}", s, sign, v.build_where())
             }
             CmpOp::Ne(s, v) => {
-                let sign = if let CmpVal::Null = v { "is not" } else { "<>" };
+                let sign = if let FieldVal::Null = v {
+                    "is not"
+                } else {
+                    "<>"
+                };
                 format!("{} {} {}", s, sign, v.build_where())
             }
             CmpOp::Gt(s, v) => format!("{} > {}", s, v.build_where()),

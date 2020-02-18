@@ -5,6 +5,7 @@ use chrono::prelude::*;
 use crate::history::LocalUnique;
 use yatt_orm::errors::{DBError, DBResult};
 use yatt_orm::statement::*;
+use yatt_orm::FieldVal;
 use yatt_orm::{BoxStorage, Identifiers};
 
 pub trait DBRoot {
@@ -16,7 +17,7 @@ impl dyn DBRoot {
     pub fn cur_running(&self) -> DBResult<Option<(Node, Interval)>> {
         let intrval = self
             .intervals()
-            .filter(eq(Interval::end_n(), CmpVal::Null))?;
+            .filter(eq(Interval::end_n(), FieldVal::Null))?;
 
         if intrval.is_empty() {
             return Ok(None);
@@ -74,12 +75,12 @@ impl dyn DBRoot {
     }
 
     pub fn find_path(&self, path: &[&str]) -> DBResult<Vec<Node>> {
-        let mut parent = CmpVal::Null;
+        let mut parent = FieldVal::Null;
         let mut res = Vec::new();
         for p in path.iter() {
             let node = self.find_path_part(&p, &parent)?;
             if let Some(node) = node {
-                parent = CmpVal::Usize(node.id);
+                parent = FieldVal::Usize(node.id);
                 res.push(node);
             } else {
                 return Ok(res);
@@ -146,7 +147,7 @@ impl dyn DBRoot {
         Ok(res)
     }
 
-    fn find_path_part(&self, name: &str, parent_id: &CmpVal) -> DBResult<Option<Node>> {
+    fn find_path_part(&self, name: &str, parent_id: &FieldVal) -> DBResult<Option<Node>> {
         let nodes = self.nodes().filter(and(
             eq(Node::parent_id_n(), parent_id),
             eq(Node::label_n(), name),

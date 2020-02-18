@@ -3,6 +3,7 @@ use std::cmp::Ordering;
 
 use crate::core::*;
 use yatt_orm::statement::*;
+use yatt_orm::FieldVal;
 
 use crate::parse::*;
 use crate::report::*;
@@ -19,7 +20,7 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
             and(
                 or(
                     gt(Interval::end_n(), start),
-                    eq(Interval::end_n(), CmpVal::Null),
+                    eq(Interval::end_n(), FieldVal::Null),
                 ),
                 lt(Interval::begin_n(), end),
             ),

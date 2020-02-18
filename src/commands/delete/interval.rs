@@ -2,7 +2,7 @@ use crate::core::*;
 use crate::*;
 use crossterm_input::input;
 use std::convert::TryInto;
-use yatt_orm::{statement::*, DBError};
+use yatt_orm::{statement::*, DBError, FieldVal};
 
 pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
     let no_prompt = args.is_present("yes");
@@ -19,7 +19,7 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         let intervals = ctx.db.intervals().by_statement(
             filter(and(
                 ne(Interval::deleted_n(), 1),
-                ne(Interval::end_n(), CmpVal::Null),
+                ne(Interval::end_n(), FieldVal::Null),
             ))
             .sort(&Interval::begin_n(), SortDir::Descend)
             .limit(offset),
