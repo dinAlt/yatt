@@ -7,15 +7,15 @@ extern crate std;
 extern crate serde_derive;
 #[macro_use]
 extern crate lazy_static;
+use std::fs;
+use std::path::PathBuf;
+use std::rc::Rc;
 use chrono::prelude::*;
 use clap;
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use config::{Config, File};
 use crossterm_style::Color::*;
 use dirs;
-use std::fs;
-use std::path::PathBuf;
-use std::rc::Rc;
 use termimad::*;
 mod commands {
     use crate::*;
@@ -192,14 +192,14 @@ mod commands {
             }
         }
         mod total {
+            use chrono::Duration;
+            use std::cmp::Ordering;
             use crate::core::*;
+            use yatt_orm::statement::*;
+            use yatt_orm::FieldVal;
             use crate::parse::*;
             use crate::report::*;
             use crate::*;
-            use chrono::Duration;
-            use std::cmp::Ordering;
-            use yatt_orm::statement::*;
-            use yatt_orm::FieldVal;
             pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
                 let (start, end) = if let Some(v) = args.values_of("period") {
                     parse_period(&v.collect::<Vec<_>>().join(" "), &PeriodOpts::default())?
@@ -616,9 +616,9 @@ mod commands {
     }
 }
 mod core {
-    use crate::history::LocalUnique;
-    use chrono::prelude::*;
     use std::convert::TryFrom;
+    use chrono::prelude::*;
+    use crate::history::LocalUnique;
     use yatt_orm::errors::{DBError, DBResult};
     use yatt_orm::statement::*;
     use yatt_orm::FieldVal;
@@ -827,28 +827,45 @@ mod core {
         }
     }
     impl Node {
-        pub fn id_n() -> &str {
-            &"id"
+        const ID_N_CONST: &'static str = &"id";
+        pub fn id_n() -> &'static str {
+            Self::ID_N_CONST
         }
-        pub fn parent_id_n() -> &str {
-            &"parent_id"
+        const PARENT_ID_N_CONST: &'static str = &"parent_id";
+        pub fn parent_id_n() -> &'static str {
+            Self::PARENT_ID_N_CONST
         }
-        pub fn label_n() -> &str {
-            &"label"
+        const LABEL_N_CONST: &'static str = &"label";
+        pub fn label_n() -> &'static str {
+            Self::LABEL_N_CONST
         }
-        pub fn created_n() -> &str {
-            &"created"
+        const CREATED_N_CONST: &'static str = &"created";
+        pub fn created_n() -> &'static str {
+            Self::CREATED_N_CONST
         }
-        pub fn closed_n() -> &str {
-            &"closed"
+        const CLOSED_N_CONST: &'static str = &"closed";
+        pub fn closed_n() -> &'static str {
+            Self::CLOSED_N_CONST
         }
-        pub fn deleted_n() -> &str {
-            &"deleted"
+        const DELETED_N_CONST: &'static str = &"deleted";
+        pub fn deleted_n() -> &'static str {
+            Self::DELETED_N_CONST
         }
+    }
+    impl Node {
+        const STRUCT_NAME: &'static str = "Node";
+        const FIELD_LIST: &'static [&'static str] = &[
+            &"id",
+            &"parent_id",
+            &"label",
+            &"created",
+            &"closed",
+            &"deleted",
+        ];
     }
     impl yatt_orm::StoreObject for Node {
         fn get_type_name(&self) -> &'static str {
-            &"Node"
+            Self::STRUCT_NAME
         }
         fn get_field_val(&self, field_name: &str) -> yatt_orm::FieldVal {
             match field_name {
@@ -872,15 +889,35 @@ mod core {
                 }),
             }
         }
+        fn set_field_val(
+            &mut self,
+            field_name: &str,
+            val: impl Into<yatt_orm::FieldVal>,
+        ) -> yatt_orm::FieldVal {
+            let val: yatt_orm::FieldVal = val.into();
+            match field_name {
+                "id" => self.id = val.into(),
+                "parent_id" => self.parent_id = val.into(),
+                "label" => self.label = val.into(),
+                "created" => self.created = val.into(),
+                "closed" => self.closed = val.into(),
+                "deleted" => self.deleted = val.into(),
+                _ => ::std::rt::begin_panic({
+                    let res = ::alloc::fmt::format(::core::fmt::Arguments::new_v1(
+                        &["there is no field ", " in struct "],
+                        &match (&field_name, &"Node") {
+                            (arg0, arg1) => [
+                                ::core::fmt::ArgumentV1::new(arg0, ::core::fmt::Display::fmt),
+                                ::core::fmt::ArgumentV1::new(arg1, ::core::fmt::Display::fmt),
+                            ],
+                        },
+                    ));
+                    res
+                }),
+            }
+        }
         fn get_fields_list(&self) -> &'static [&'static str] {
-            &[
-                &"id",
-                &"parent_id",
-                &"label",
-                &"created",
-                &"closed",
-                &"deleted",
-            ]
+            Self::FIELD_LIST
         }
     }
     impl ToString for Node {
@@ -931,48 +968,54 @@ mod core {
     impl ::core::clone::Clone for Interval {
         #[inline]
         fn clone(&self) -> Interval {
-            match *self {
-                Interval {
-                    id: ref __self_0_0,
-                    node_id: ref __self_0_1,
-                    begin: ref __self_0_2,
-                    end: ref __self_0_3,
-                    deleted: ref __self_0_4,
-                    closed: ref __self_0_5,
-                } => Interval {
-                    id: ::core::clone::Clone::clone(&(*__self_0_0)),
-                    node_id: ::core::clone::Clone::clone(&(*__self_0_1)),
-                    begin: ::core::clone::Clone::clone(&(*__self_0_2)),
-                    end: ::core::clone::Clone::clone(&(*__self_0_3)),
-                    deleted: ::core::clone::Clone::clone(&(*__self_0_4)),
-                    closed: ::core::clone::Clone::clone(&(*__self_0_5)),
-                },
+            {
+                let _: ::core::clone::AssertParamIsClone<usize>;
+                let _: ::core::clone::AssertParamIsClone<Option<usize>>;
+                let _: ::core::clone::AssertParamIsClone<DateTime<Utc>>;
+                let _: ::core::clone::AssertParamIsClone<Option<DateTime<Utc>>>;
+                let _: ::core::clone::AssertParamIsClone<bool>;
+                let _: ::core::clone::AssertParamIsClone<bool>;
+                *self
             }
         }
     }
+    #[automatically_derived]
+    #[allow(unused_qualifications)]
+    impl ::core::marker::Copy for Interval {}
     impl Interval {
-        pub fn id_n() -> &str {
-            &"id"
+        const ID_N_CONST: &'static str = &"id";
+        pub fn id_n() -> &'static str {
+            Self::ID_N_CONST
         }
-        pub fn node_id_n() -> &str {
-            &"node_id"
+        const NODE_ID_N_CONST: &'static str = &"node_id";
+        pub fn node_id_n() -> &'static str {
+            Self::NODE_ID_N_CONST
         }
-        pub fn begin_n() -> &str {
-            &"begin"
+        const BEGIN_N_CONST: &'static str = &"begin";
+        pub fn begin_n() -> &'static str {
+            Self::BEGIN_N_CONST
         }
-        pub fn end_n() -> &str {
-            &"end"
+        const END_N_CONST: &'static str = &"end";
+        pub fn end_n() -> &'static str {
+            Self::END_N_CONST
         }
-        pub fn deleted_n() -> &str {
-            &"deleted"
+        const DELETED_N_CONST: &'static str = &"deleted";
+        pub fn deleted_n() -> &'static str {
+            Self::DELETED_N_CONST
         }
-        pub fn closed_n() -> &str {
-            &"closed"
+        const CLOSED_N_CONST: &'static str = &"closed";
+        pub fn closed_n() -> &'static str {
+            Self::CLOSED_N_CONST
         }
+    }
+    impl Interval {
+        const STRUCT_NAME: &'static str = "Interval";
+        const FIELD_LIST: &'static [&'static str] =
+            &[&"id", &"node_id", &"begin", &"end", &"deleted", &"closed"];
     }
     impl yatt_orm::StoreObject for Interval {
         fn get_type_name(&self) -> &'static str {
-            &"Interval"
+            Self::STRUCT_NAME
         }
         fn get_field_val(&self, field_name: &str) -> yatt_orm::FieldVal {
             match field_name {
@@ -996,8 +1039,35 @@ mod core {
                 }),
             }
         }
+        fn set_field_val(
+            &mut self,
+            field_name: &str,
+            val: impl Into<yatt_orm::FieldVal>,
+        ) -> yatt_orm::FieldVal {
+            let val: yatt_orm::FieldVal = val.into();
+            match field_name {
+                "id" => self.id = val.into(),
+                "node_id" => self.node_id = val.into(),
+                "begin" => self.begin = val.into(),
+                "end" => self.end = val.into(),
+                "deleted" => self.deleted = val.into(),
+                "closed" => self.closed = val.into(),
+                _ => ::std::rt::begin_panic({
+                    let res = ::alloc::fmt::format(::core::fmt::Arguments::new_v1(
+                        &["there is no field ", " in struct "],
+                        &match (&field_name, &"Interval") {
+                            (arg0, arg1) => [
+                                ::core::fmt::ArgumentV1::new(arg0, ::core::fmt::Display::fmt),
+                                ::core::fmt::ArgumentV1::new(arg1, ::core::fmt::Display::fmt),
+                            ],
+                        },
+                    ));
+                    res
+                }),
+            }
+        }
         fn get_fields_list(&self) -> &'static [&'static str] {
-            &[&"id", &"node_id", &"begin", &"end", &"deleted", &"closed"]
+            Self::FIELD_LIST
         }
     }
     impl ToString for Interval {
@@ -1027,12 +1097,12 @@ mod core {
     }
 }
 mod errors {
-    use super::format::*;
-    use crate::core::*;
-    use config::ConfigError;
-    use custom_error::*;
     use std::error::Error;
     use std::io;
+    use config::ConfigError;
+    use custom_error::*;
+    use super::format::*;
+    use crate::core::*;
     use yatt_orm::errors::*;
     pub type CliResult<T> = std::result::Result<T, CliError>;
     pub enum CliError {
@@ -1629,9 +1699,9 @@ mod errors {
     }
 }
 mod format {
-    use crate::core::Node;
     use chrono::prelude::*;
     use chrono::Duration;
+    use crate::core::Node;
     pub(crate) fn format_task_name(t: &[Node]) -> String {
         t.iter()
             .map(|n| n.label.clone())
@@ -1765,10 +1835,10 @@ mod format {
     }
 }
 mod history {
-    use crate::core::{DBRoot, Interval, Node};
-    use chrono::Utc;
     use std::rc::Rc;
+    use chrono::Utc;
     use uuid::Uuid;
+    use crate::core::{DBRoot, Interval, Node};
     use yatt_orm::statement::Statement;
     use yatt_orm::{
         BoxStorage, DBError, DBResult, HistoryRecord, HistoryRecordType, HistoryStorage, Storage,
@@ -1874,10 +1944,10 @@ mod history {
 }
 mod history_storage {
     pub mod sqlite {
-        use rusqlite::{params, Connection, Result as SQLITEResult, NO_PARAMS};
         use std::convert::TryFrom;
         use std::path::Path;
         use std::rc::Rc;
+        use rusqlite::{params, Connection, Result as SQLITEResult, NO_PARAMS};
         use uuid::Uuid;
         use yatt_orm::{DBError, DBResult, HistoryRecord, HistoryStorage};
         pub(crate) struct DB {
@@ -1934,11 +2004,11 @@ mod history_storage {
                 entity_id
         ) values (?1, ?2, ?3, ?4, ?5)",
                         &[
-                            &r.date as &dyn::rusqlite::ToSql,
-                            &r.uuid.to_string() as &dyn::rusqlite::ToSql,
-                            &isize::from(r.record_type) as &dyn::rusqlite::ToSql,
-                            &r.entity_type as &dyn::rusqlite::ToSql,
-                            &isize::try_from(r.entity_id).unwrap() as &dyn::rusqlite::ToSql,
+                            &r.date as &dyn ::rusqlite::ToSql,
+                            &r.uuid.to_string() as &dyn ::rusqlite::ToSql,
+                            &isize::from(r.record_type) as &dyn ::rusqlite::ToSql,
+                            &r.entity_type as &dyn ::rusqlite::ToSql,
+                            &isize::try_from(r.entity_id).unwrap() as &dyn ::rusqlite::ToSql,
                         ],
                     )
                     .map_err(|s| DBError::wrap(Box::new(s)))?;
@@ -1953,8 +2023,8 @@ mod history_storage {
                     )
                     .map_err(|s| DBError::wrap(Box::new(s)))?
                     .query(&[
-                        &isize::try_from(id).unwrap() as &dyn::rusqlite::ToSql,
-                        &entity_type as &dyn::rusqlite::ToSql,
+                        &isize::try_from(id).unwrap() as &dyn ::rusqlite::ToSql,
+                        &entity_type as &dyn ::rusqlite::ToSql,
                     ])
                     .map_err(|s| DBError::wrap(Box::new(s)))?
                     .next()
@@ -1991,11 +2061,11 @@ mod history_storage {
     }
 }
 mod parse {
-    use super::*;
+    use std::convert::{TryFrom, TryInto};
     use chrono::prelude::*;
     use chrono::Duration;
     use regex::*;
-    use std::convert::{TryFrom, TryInto};
+    use super::*;
     pub struct PeriodOpts {
         pub week_starts_from_sunday: bool,
     }
@@ -3182,12 +3252,12 @@ mod report {
 }
 mod storage {
     pub mod sqlite {
-        use crate::core::*;
-        use chrono::prelude::*;
-        use rusqlite::{params, Connection, Result as SQLITEResult, NO_PARAMS};
         use std::convert::TryFrom;
         use std::path::Path;
         use std::rc::Rc;
+        use chrono::prelude::*;
+        use rusqlite::{params, Connection, Result as SQLITEResult, ToSql, NO_PARAMS};
+        use crate::core::*;
         use yatt_orm::errors::*;
         use yatt_orm::statement::*;
         use yatt_orm::*;
@@ -3243,6 +3313,148 @@ mod storage {
                     NO_PARAMS,
                 )?;
                 Ok(())
+            }
+        }
+        impl St for DB {
+            fn save(&self, item: impl StoreObject) -> DBResult<usize> {
+                let id = if let FieldVal::Usize(id) = item.get_field_val("id") {
+                    id
+                } else {
+                    return Err(DBError::Unexpected {
+                        message: "field id has unexpected type".into(),
+                    });
+                };
+                let field_list = item.get_fields_list();
+                let id_idx = field_list.iter().position(|&v| v == "id").unwrap();
+                let mut params: Vec<Box<dyn ToSql>> = field_list
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(n, &v)| {
+                        if n == id_idx {
+                            None
+                        } else {
+                            let fld = item.get_field_val(v);
+                            let res: Box<dyn ToSql> = match fld {
+                                FieldVal::Usize(v) => Box::new(isize::try_from(v).unwrap()),
+                                FieldVal::Bool(v) => Box::new(v),
+                                FieldVal::String(v) => Box::new(v),
+                                FieldVal::DateTime(v) => Box::new(v),
+                                FieldVal::Null => {
+                                    let res: Box<Option<isize>> = Box::new(None);
+                                    res
+                                }
+                            };
+                            Some(res)
+                        }
+                    })
+                    .collect();
+                let sql = if id > 0 {
+                    let sql = {
+                        let res = ::alloc::fmt::format(::core::fmt::Arguments::new_v1(
+                            &["update ", " set ", " where id = ?", " "],
+                            &match (
+                                &item.get_type_name(),
+                                &field_list
+                                    .iter()
+                                    .enumerate()
+                                    .filter_map(|(n, &v)| if n == id_idx { None } else { Some(v) })
+                                    .enumerate()
+                                    .map(|(n, v)| {
+                                        let res =
+                                            ::alloc::fmt::format(::core::fmt::Arguments::new_v1(
+                                                &["", " = ?"],
+                                                &match (&v, &(n + 1)) {
+                                                    (arg0, arg1) => [
+                                                        ::core::fmt::ArgumentV1::new(
+                                                            arg0,
+                                                            ::core::fmt::Display::fmt,
+                                                        ),
+                                                        ::core::fmt::ArgumentV1::new(
+                                                            arg1,
+                                                            ::core::fmt::Display::fmt,
+                                                        ),
+                                                    ],
+                                                },
+                                            ));
+                                        res
+                                    })
+                                    .collect::<Vec<String>>()
+                                    .join(", "),
+                                &(field_list.len() - 1),
+                            ) {
+                                (arg0, arg1, arg2) => [
+                                    ::core::fmt::ArgumentV1::new(arg0, ::core::fmt::Display::fmt),
+                                    ::core::fmt::ArgumentV1::new(arg1, ::core::fmt::Display::fmt),
+                                    ::core::fmt::ArgumentV1::new(arg2, ::core::fmt::Display::fmt),
+                                ],
+                            },
+                        ));
+                        res
+                    };
+                    params.push(Box::new(isize::try_from(id).unwrap()));
+                    sql
+                } else {
+                    {
+                        let res = ::alloc::fmt::format(::core::fmt::Arguments::new_v1(
+                            &["insert into ", " (", ") values (", ")"],
+                            &match (
+                                &item.get_type_name(),
+                                &field_list
+                                    .iter()
+                                    .enumerate()
+                                    .filter_map(|(n, &v)| if n == id_idx { None } else { Some(v) })
+                                    .collect::<Vec<&str>>()
+                                    .join(", "),
+                                &(1..field_list.len() - 1)
+                                    .map(|v| {
+                                        let res =
+                                            ::alloc::fmt::format(::core::fmt::Arguments::new_v1(
+                                                &["?"],
+                                                &match (&v,) {
+                                                    (arg0,) => [::core::fmt::ArgumentV1::new(
+                                                        arg0,
+                                                        ::core::fmt::Display::fmt,
+                                                    )],
+                                                },
+                                            ));
+                                        res
+                                    })
+                                    .collect::<Vec<String>>()
+                                    .join(", "),
+                            ) {
+                                (arg0, arg1, arg2) => [
+                                    ::core::fmt::ArgumentV1::new(arg0, ::core::fmt::Display::fmt),
+                                    ::core::fmt::ArgumentV1::new(arg1, ::core::fmt::Display::fmt),
+                                    ::core::fmt::ArgumentV1::new(arg2, ::core::fmt::Display::fmt),
+                                ],
+                            },
+                        ));
+                        res
+                    }
+                };
+                self.con
+                    .execute(&sql, params)
+                    .map_err(|e| DBError::wrap(Box::new(e)))?;
+                if id > 0 {
+                    Ok(id)
+                } else {
+                    Ok(usize::try_from(self.con.last_insert_rowid()).unwrap())
+                }
+            }
+            fn get_all<T: StoreObject>(&self) -> DBResult<Vec<T>> {
+                {
+                    ::std::rt::begin_panic("not implemented")
+                }
+            }
+            fn remove(&self, item: impl StoreObject) -> DBResult<()> {
+                {
+                    ::std::rt::begin_panic("not implemented")
+                }
+            }
+            fn get_by_statement<T: StoreObject>(&self, s: Statement) -> DBResult<Vec<T>> {
+                {
+                    ::std::rt::begin_panic("not implemented")
+                }
             }
         }
         impl DBRoot for DB {
@@ -3303,11 +3515,11 @@ mod storage {
                 deleted = ?4
                 where id = ?5",
                             &[
-                                &node.label as &dyn::rusqlite::ToSql,
-                                &node.closed as &dyn::rusqlite::ToSql,
-                                &parent_id as &dyn::rusqlite::ToSql,
-                                &id as &dyn::rusqlite::ToSql,
-                                &node.deleted as &dyn::rusqlite::ToSql,
+                                &node.label as &dyn ::rusqlite::ToSql,
+                                &node.closed as &dyn ::rusqlite::ToSql,
+                                &parent_id as &dyn ::rusqlite::ToSql,
+                                &id as &dyn ::rusqlite::ToSql,
+                                &node.deleted as &dyn ::rusqlite::ToSql,
                             ],
                         )
                         .map_err(|s| DBError::wrap(Box::new(s)))?;
@@ -3321,10 +3533,10 @@ mod storage {
                         created, 
                         deleted) values (?1, ?2, ?3, ?4)",
                         &[
-                            &node.label as &dyn::rusqlite::ToSql,
-                            &parent_id as &dyn::rusqlite::ToSql,
-                            &Utc::now() as &dyn::rusqlite::ToSql,
-                            &node.deleted as &dyn::rusqlite::ToSql,
+                            &node.label as &dyn ::rusqlite::ToSql,
+                            &parent_id as &dyn ::rusqlite::ToSql,
+                            &Utc::now() as &dyn ::rusqlite::ToSql,
+                            &node.deleted as &dyn ::rusqlite::ToSql,
                         ],
                     )
                     .map_err(|s| DBError::wrap(Box::new(s)))?;
@@ -3341,7 +3553,7 @@ mod storage {
                 self.con
                     .execute(
                         "update nodes set deleted = 1 where id = ?1",
-                        &[&id as &dyn::rusqlite::ToSql],
+                        &[&id as &dyn ::rusqlite::ToSql],
                     )
                     .map_err(|s| DBError::wrap(Box::new(s)))?;
                 Ok(())
@@ -3404,12 +3616,12 @@ mod storage {
                 closed = ?5
                 where id = ?6",
                             &[
-                                &node_id as &dyn::rusqlite::ToSql,
-                                &interval.begin as &dyn::rusqlite::ToSql,
-                                &interval.end as &dyn::rusqlite::ToSql,
-                                &interval.deleted as &dyn::rusqlite::ToSql,
-                                &interval.closed as &dyn::rusqlite::ToSql,
-                                &id as &dyn::rusqlite::ToSql,
+                                &node_id as &dyn ::rusqlite::ToSql,
+                                &interval.begin as &dyn ::rusqlite::ToSql,
+                                &interval.end as &dyn ::rusqlite::ToSql,
+                                &interval.deleted as &dyn ::rusqlite::ToSql,
+                                &interval.closed as &dyn ::rusqlite::ToSql,
+                                &id as &dyn ::rusqlite::ToSql,
                             ],
                         )
                         .map_err(|s| DBError::wrap(Box::new(s)))?;
@@ -3420,11 +3632,11 @@ mod storage {
                         "insert into intervals (node_id, begin, end, deleted, closed) 
                 values (?1, ?2, ?3, ?4, ?5)",
                         &[
-                            &node_id as &dyn::rusqlite::ToSql,
-                            &interval.begin as &dyn::rusqlite::ToSql,
-                            &interval.end as &dyn::rusqlite::ToSql,
-                            &interval.deleted as &dyn::rusqlite::ToSql,
-                            &interval.closed as &dyn::rusqlite::ToSql,
+                            &node_id as &dyn ::rusqlite::ToSql,
+                            &interval.begin as &dyn ::rusqlite::ToSql,
+                            &interval.end as &dyn ::rusqlite::ToSql,
+                            &interval.deleted as &dyn ::rusqlite::ToSql,
+                            &interval.closed as &dyn ::rusqlite::ToSql,
                         ],
                     )
                     .map_err(|s| DBError::wrap(Box::new(s)))?;
@@ -3441,7 +3653,7 @@ mod storage {
                 self.con
                     .execute(
                         "update intervals set deleted = 1 where id = ?1",
-                        &[&id as &dyn::rusqlite::ToSql],
+                        &[&id as &dyn ::rusqlite::ToSql],
                     )
                     .map_err(|s| DBError::wrap(Box::new(s)))?;
                 Ok(())
@@ -3456,7 +3668,7 @@ mod storage {
         trait BuildSelect {
             fn build_select(&self) -> String;
         }
-        impl BuildSelect for Statement {
+        impl BuildSelect for Statement<'_> {
             fn build_select(&self) -> String {
                 if self.distinct {
                     return "select distinct".to_string();
@@ -3467,7 +3679,7 @@ mod storage {
         trait BuildWhere {
             fn build_where(&self) -> String;
         }
-        impl BuildWhere for Statement {
+        impl BuildWhere for Statement<'_> {
             fn build_where(&self) -> String {
                 let mut res = String::new();
                 if self.filter.is_some() {
@@ -3583,7 +3795,7 @@ mod storage {
                 }
             }
         }
-        impl BuildWhere for CmpOp {
+        impl<'a> BuildWhere for CmpOp<'a> {
             fn build_where(&self) -> String {
                 match self {
                     CmpOp::Eq(s, v) => {
@@ -3667,7 +3879,7 @@ mod storage {
                 }
             }
         }
-        impl BuildWhere for Filter {
+        impl BuildWhere for Filter<'_> {
             fn build_where(&self) -> String {
                 match self {
                     Filter::LogOp(lo) => lo.build_where(),
@@ -3675,7 +3887,7 @@ mod storage {
                 }
             }
         }
-        impl BuildWhere for LogOp {
+        impl BuildWhere for LogOp<'_> {
             fn build_where(&self) -> String {
                 match self {
                     LogOp::Or(f1, f2) => {

@@ -3,7 +3,7 @@ use std::path::Path;
 use std::rc::Rc;
 
 use chrono::prelude::*;
-use rusqlite::{params, Connection, Result as SQLITEResult, NO_PARAMS};
+use rusqlite::{params, types::ValueRef, Connection, Result as SQLITEResult, ToSql, NO_PARAMS};
 
 use crate::core::*;
 use yatt_orm::errors::*;
@@ -51,6 +51,184 @@ impl DB {
         )?;
 
         Ok(())
+    }
+}
+
+impl St for DB {
+    fn save(&self, item: impl StoreObject) -> DBResult<usize> {
+        let id = if let FieldVal::Usize(id) = item.get_field_val("id") {
+            id
+        } else {
+            return Err(DBError::Unexpected {
+                message: "field id has unexpected type".into(),
+            });
+        };
+
+        let field_list = item.get_fields_list();
+
+        let id_idx = field_list.iter().position(|&v| v == "id").unwrap();
+
+        let mut params: Vec<Box<dyn ToSql>> = field_list
+            .iter()
+            .enumerate()
+            .filter_map(|(n, &v)| {
+                if n == id_idx {
+                    None
+                } else {
+                    let fld = item.get_field_val(v);
+                    let res: Box<dyn ToSql> = match fld {
+                        FieldVal::Usize(v) => Box::new(isize::try_from(v).unwrap()),
+                        FieldVal::Bool(v) => Box::new(v),
+                        FieldVal::String(v) => Box::new(v),
+                        FieldVal::DateTime(v) => Box::new(v),
+                        FieldVal::F64(v) => Box::new(v),
+                        FieldVal::I64(v) => Box::new(v),
+                        FieldVal::U8Vec(v) => Box::new(v.clone()),
+                        FieldVal::Null => {
+                            let res: Box<Option<isize>> = Box::new(None);
+                            res
+                        }
+                    };
+
+                    Some(res)
+                }
+            })
+            .collect();
+
+        let sql = if id > 0 {
+            let sql = format!(
+                "update {} set {} where id = ?{} ",
+                item.get_type_name(),
+                field_list
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(n, &v)| {
+                        if n == id_idx {
+                            None
+                        } else {
+                            Some(v)
+                        }
+                    })
+                    .enumerate()
+                    .map(|(n, v)| format!("{} = ?{}", v, n + 1))
+                    .collect::<Vec<String>>()
+                    .join(", "),
+                field_list.len() - 1
+            );
+
+            params.push(Box::new(isize::try_from(id).unwrap()));
+
+            sql
+        } else {
+            format!(
+                "insert into {} ({}) values ({})",
+                item.get_type_name(),
+                field_list
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(n, &v)| {
+                        if n == id_idx {
+                            None
+                        } else {
+                            Some(v)
+                        }
+                    })
+                    .collect::<Vec<&str>>()
+                    .join(", "),
+                (1..field_list.len() - 1)
+                    .map(|v| format!("?{}", v))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )
+        };
+
+        self.con
+            .execute(&sql, params)
+            .map_err(|e| DBError::wrap(Box::new(e)))?;
+
+        if id > 0 {
+            Ok(id)
+        } else {
+            Ok(usize::try_from(self.con.last_insert_rowid()).unwrap())
+        }
+    }
+    fn get_all<T: StoreObject>(&self) -> DBResult<Vec<T>> {
+        let strct = T::default();
+        let q = format!(
+            "select {} from {}",
+            strct.get_fields_list().join(", "),
+            strct.get_type_name()
+        );
+
+        let mut q = self
+            .con
+            .prepare(&q)
+            .map_err(|e| DBError::wrap(Box::new(e)))?;
+
+        let mut rows = q.query(NO_PARAMS).map_err(|e| DBError::wrap(Box::new(e)))?;
+        let mut res = Vec::new();
+        while let Some(r) = rows.next().map_err(|e| DBError::wrap(Box::new(e)))? {
+            let mut strct = T::default();
+            for (n, fld_name) in strct.get_fields_list().iter().enumerate() {
+                let v = r.get_raw(n);
+                let v: FieldVal = match v {
+                    ValueRef::Integer(vv) => vv.into(),
+                    ValueRef::Null => FieldVal::Null,
+                    ValueRef::Real(vv) => vv.into(),
+                    ValueRef::Text(vv) => vv.into(),
+                    _ => unreachable!(),
+                };
+                strct.set_field_val(fld_name, v);
+            }
+            res.push(strct);
+        }
+
+        Ok(res)
+    }
+    fn remove_by_filter(&self, object_type_name: &str, filter: Filter) -> DBResult<()> {
+        let q = format!(
+            "update {} set deleted = 1 {}",
+            object_type_name,
+            filter.build_where()
+        );
+        self.con
+            .execute(&q, NO_PARAMS)
+            .map_err(|e| DBError::wrap(Box::new(e)))?;
+        Ok(())
+    }
+    fn get_by_statement<T: StoreObject>(&self, s: Statement) -> DBResult<Vec<T>> {
+        let strct = T::default();
+        let q = format!(
+            "{} {} from {} {}",
+            s.build_select(),
+            strct.get_fields_list().join(", "),
+            strct.get_type_name(),
+            s.build_where()
+        );
+
+        let mut q = self
+            .con
+            .prepare(&q)
+            .map_err(|e| DBError::wrap(Box::new(e)))?;
+        let mut rows = q.query(NO_PARAMS).map_err(|e| DBError::wrap(Box::new(e)))?;
+        let mut res = Vec::new();
+        while let Some(r) = rows.next().map_err(|e| DBError::wrap(Box::new(e)))? {
+            let mut strct = T::default();
+            for (n, fld_name) in strct.get_fields_list().iter().enumerate() {
+                let v = r.get_raw(n);
+                let v: FieldVal = match v {
+                    ValueRef::Integer(vv) => vv.into(),
+                    ValueRef::Null => FieldVal::Null,
+                    ValueRef::Real(vv) => vv.into(),
+                    ValueRef::Text(vv) => vv.into(),
+                    _ => unreachable!(),
+                };
+                strct.set_field_val(fld_name, v);
+            }
+            res.push(strct);
+        }
+
+        Ok(res)
     }
 }
 
@@ -285,7 +463,7 @@ trait BuildSelect {
     fn build_select(&self) -> String;
 }
 
-impl BuildSelect for Statement {
+impl BuildSelect for Statement<'_> {
     fn build_select(&self) -> String {
         if self.distinct {
             return "select distinct".to_string();
@@ -298,7 +476,7 @@ trait BuildWhere {
     fn build_where(&self) -> String;
 }
 
-impl BuildWhere for Statement {
+impl BuildWhere for Statement<'_> {
     fn build_where(&self) -> String {
         let mut res = String::new();
         if self.filter.is_some() {
@@ -346,10 +524,13 @@ impl BuildWhere for FieldVal {
             FieldVal::String(s) => format!("\"{}\"", s.to_string()),
             FieldVal::Bool(b) => (if *b { 1 } else { 0 }).to_string(),
             FieldVal::Null => String::from("null"),
+            FieldVal::I64(u) => u.to_string(),
+            FieldVal::F64(u) => u.to_string(),
+            FieldVal::U8Vec(u) => String::from_utf8(u.clone()).unwrap(),
         }
     }
 }
-impl BuildWhere for CmpOp {
+impl<'a> BuildWhere for CmpOp<'a> {
     fn build_where(&self) -> String {
         match self {
             CmpOp::Eq(s, v) => {
@@ -369,7 +550,7 @@ impl BuildWhere for CmpOp {
         }
     }
 }
-impl BuildWhere for Filter {
+impl BuildWhere for Filter<'_> {
     fn build_where(&self) -> String {
         match self {
             Filter::LogOp(lo) => lo.build_where(),
@@ -377,7 +558,7 @@ impl BuildWhere for Filter {
         }
     }
 }
-impl BuildWhere for LogOp {
+impl BuildWhere for LogOp<'_> {
     fn build_where(&self) -> String {
         match self {
             LogOp::Or(f1, f2) => format!("({} or {})", f1.build_where(), f2.build_where()),

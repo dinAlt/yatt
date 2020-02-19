@@ -175,19 +175,30 @@ pub struct Node {
     pub deleted: bool,
 }
 
+impl Default for Node {
+    fn default() -> Self {
+        Node {
+            id: 0,
+            parent_id: None,
+            label: String::new(),
+            created: Utc::now(),
+            closed: false,
+            deleted: false,
+        }
+    }
+}
 impl ToString for Node {
     fn to_string(&self) -> String {
         self.label.to_owned()
     }
 }
-
 impl LocalUnique for Node {
     fn get_local_id(&self) -> usize {
         self.id
     }
 }
 
-#[derive(Debug, Clone, Identifiers)]
+#[derive(Debug, Clone, Copy, Identifiers)]
 pub struct Interval {
     pub id: usize,
     pub node_id: Option<usize>,
@@ -197,6 +208,18 @@ pub struct Interval {
     pub closed: bool,
 }
 
+impl Default for Interval {
+    fn default() -> Self {
+        Interval {
+            id: 0,
+            node_id: None,
+            begin: Utc::now(),
+            end: None,
+            deleted: false,
+            closed: false,
+        }
+    }
+}
 impl ToString for Interval {
     fn to_string(&self) -> String {
         let end = match self.end {

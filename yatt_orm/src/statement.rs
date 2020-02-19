@@ -1,16 +1,16 @@
 use super::FieldVal;
 
 #[derive(Debug, Clone, Default)]
-pub struct Statement {
-    pub filter: Option<Filter>,
+pub struct Statement<'a> {
+    pub filter: Option<Filter<'a>>,
     pub sorts: Option<Vec<SortItem>>,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
     pub distinct: bool,
 }
 
-impl Statement {
-    pub fn filter(mut self, f: Filter) -> Self {
+impl<'a> Statement<'a> {
+    pub fn filter(mut self, f: Filter<'a>) -> Self {
         self.filter = Some(f);
         self
     }
@@ -44,24 +44,24 @@ pub enum SortDir {
 pub struct SortItem(pub String, pub SortDir);
 
 #[derive(Debug, Clone)]
-pub enum Filter {
-    CmpOp(CmpOp),
-    LogOp(Box<LogOp>),
+pub enum Filter<'a> {
+    CmpOp(CmpOp<'a>),
+    LogOp(Box<LogOp<'a>>),
 }
 
 #[derive(Debug, Clone)]
-pub enum LogOp {
-    And(Filter, Filter),
-    Or(Filter, Filter),
-    Not(Filter),
+pub enum LogOp<'a> {
+    And(Filter<'a>, Filter<'a>),
+    Or(Filter<'a>, Filter<'a>),
+    Not(Filter<'a>),
 }
 
 #[derive(Debug, Clone)]
-pub enum CmpOp {
-    Gt(String, FieldVal),
-    Lt(String, FieldVal),
-    Eq(String, FieldVal),
-    Ne(String, FieldVal),
+pub enum CmpOp<'a> {
+    Gt(&'a str, FieldVal),
+    Lt(&'a str, FieldVal),
+    Eq(&'a str, FieldVal),
+    Ne(&'a str, FieldVal),
 }
 pub fn filter(v: Filter) -> Statement {
     Statement::default().filter(v)
@@ -69,31 +69,31 @@ pub fn filter(v: Filter) -> Statement {
 pub fn sort(field: &str, direction: SortDir) -> Statement {
     Statement::default().sort(field, direction)
 }
-pub fn limit(v: usize) -> Statement {
+pub fn limit<'a>(v: usize) -> Statement<'a> {
     Statement::default().limit(v)
 }
-pub fn offset(v: usize) -> Statement {
+pub fn offset<'a>(v: usize) -> Statement<'a> {
     Statement::default().offset(v)
 }
-pub fn distinct() -> Statement {
+pub fn distinct<'a>() -> Statement<'a> {
     Statement::default().distinct()
 }
-pub fn gt(field: String, value: impl Into<FieldVal>) -> Filter {
+pub fn gt(field: &str, value: impl Into<FieldVal>) -> Filter {
     Filter::CmpOp(CmpOp::Gt(field, value.into()))
 }
-pub fn lt(field: String, value: impl Into<FieldVal>) -> Filter {
+pub fn lt(field: &str, value: impl Into<FieldVal>) -> Filter {
     Filter::CmpOp(CmpOp::Lt(field, value.into()))
 }
-pub fn eq(field: String, value: impl Into<FieldVal>) -> Filter {
+pub fn eq(field: &str, value: impl Into<FieldVal>) -> Filter {
     Filter::CmpOp(CmpOp::Eq(field, value.into()))
 }
-pub fn ne(field: String, value: impl Into<FieldVal>) -> Filter {
+pub fn ne(field: &str, value: impl Into<FieldVal>) -> Filter {
     Filter::CmpOp(CmpOp::Ne(field, value.into()))
 }
-pub fn and(f1: Filter, f2: Filter) -> Filter {
+pub fn and<'a>(f1: Filter<'a>, f2: Filter<'a>) -> Filter<'a> {
     Filter::LogOp(Box::new(LogOp::And(f1, f2)))
 }
-pub fn or(f1: Filter, f2: Filter) -> Filter {
+pub fn or<'a>(f1: Filter<'a>, f2: Filter<'a>) -> Filter<'a> {
     Filter::LogOp(Box::new(LogOp::Or(f1, f2)))
 }
 pub fn not(f: Filter) -> Filter {
