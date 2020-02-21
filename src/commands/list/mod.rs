@@ -3,7 +3,10 @@ use crate::*;
 mod intervals;
 mod tasks;
 
-pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec<T: DBRoot, P: Printer>(
+    ctx: &AppContext<T, P>,
+    args: &ArgMatches,
+) -> CliResult<()> {
     match args.subcommand() {
         ("tasks", Some(m)) => tasks::exec(ctx, m),
         ("intervals", Some(m)) => intervals::exec(ctx, m),

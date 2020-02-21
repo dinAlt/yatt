@@ -3,6 +3,8 @@ pub mod statement;
 
 use chrono::prelude::*;
 use chrono::{DateTime, Utc};
+use core::convert::TryFrom;
+use std::convert::TryInto;
 use uuid::Uuid;
 
 pub use errors::*;
@@ -10,23 +12,24 @@ pub use yatt_orm_derive::*;
 
 use statement::*;
 
-pub type BoxStorage<T> = Box<dyn Storage<Item = T>>;
-
 pub trait Storage {
-    type Item;
-    fn save(&self, item: &Self::Item) -> DBResult<usize>;
-    fn all(&self) -> DBResult<Vec<Self::Item>>;
-    fn remove(&self, id: usize) -> DBResult<()>;
-    fn by_statement(&self, s: Statement) -> DBResult<Vec<Self::Item>>;
-}
+    fn save(&self, item: &impl StoreObject) -> DBResult<usize>
+    where
+        Self: Sized;
+    fn get_all<T: StoreObject>(&self) -> DBResult<Vec<T>>
+    where
+        Self: Sized;
+    fn remove_by_filter<T: StoreObject>(&self, filter: Filter) -> DBResult<()>
+    where
+        Self: Sized;
+    fn get_by_statement<T: StoreObject>(&self, s: Statement) -> DBResult<Vec<T>>
+    where
+        Self: Sized;
 
-pub trait St {
-    fn save(&self, item: impl StoreObject) -> DBResult<usize>;
-    fn get_all<T: StoreObject>(&self) -> DBResult<Vec<T>>;
-    fn remove_by_filter(&self, object_type_name: &str, filter: Filter) -> DBResult<()>;
-    fn get_by_statement<T: StoreObject>(&self, s: Statement) -> DBResult<Vec<T>>;
-
-    fn get_by_id<T: StoreObject>(&self, id: usize) -> DBResult<T> {
+    fn get_by_id<T: StoreObject>(&self, id: usize) -> DBResult<T>
+    where
+        Self: Sized,
+    {
         let res = self.get_by_statement::<T>(filter(eq(&"id", id)))?;
         if res.is_empty() {
             return Err(DBError::IsEmpty {
@@ -37,69 +40,19 @@ pub trait St {
         Ok(res.first().unwrap().to_owned())
     }
 
-    fn get_by_filter<T: StoreObject>(&self, f: Filter) -> DBResult<Vec<T>> {
+    fn get_by_filter<T: StoreObject>(&self, f: Filter) -> DBResult<Vec<T>>
+    where
+        Self: Sized,
+    {
         let res = self.get_by_statement(filter(f))?;
         Ok(res)
     }
 
-    fn get_with_max<T: StoreObject>(&self, f: &str) -> DBResult<Option<T>> {
+    fn get_with_max<T: StoreObject>(&self, f: &str) -> DBResult<Option<T>>
+    where
+        Self: Sized,
+    {
         let res: Vec<T> = self.get_by_statement(sort(f, SortDir::Descend).limit(1))?;
-        if res.is_empty() {
-            return Ok(None);
-        }
-        Ok(Some(res.first().unwrap().to_owned()))
-    }
-}
-
-// pub trait StFuncs {
-//     fn get_by_id<T: StoreObject + Clone>(&self, id: usize) -> DBResult<T>;
-//     fn get_by_filter<T: StoreObject + Clone>(&self, f: Filter) -> DBResult<Vec<T>>;
-//     fn get_with_max<T: StoreObject + Clone>(&self, f: &str) -> DBResult<Option<T>>;
-// }
-
-// impl<T: St> StFuncs for T {
-//     fn get_by_id<U: StoreObject + Clone>(&self, id: usize) -> DBResult<U> {
-//         let res = self.get_by_statement::<U>(filter(eq(&"id", id)))?;
-//         if res.is_empty() {
-//             return Err(DBError::IsEmpty {
-//                 message: format!("no row with id {}", id),
-//             });
-//         }
-
-//         Ok(res.first().unwrap().to_owned())
-//     }
-
-//     fn get_by_filter<U: StoreObject + Clone>(&self, f: Filter) -> DBResult<Vec<U>> {
-//         let res = self.get_by_statement(filter(f))?;
-//         Ok(res)
-//     }
-
-//     fn get_with_max<U: StoreObject + Clone>(&self, f: &str) -> DBResult<Option<U>> {
-//         let res: Vec<U> = self.get_by_statement(sort(f, SortDir::Descend).limit(1))?;
-//         if res.is_empty() {
-//             return Ok(None);
-//         }
-//         Ok(Some(res.first().unwrap().to_owned()))
-//     }
-// }
-
-impl<T: Clone> dyn Storage<Item = T> {
-    pub fn by_id(&self, id: usize) -> DBResult<T> {
-        let res = self.by_statement(filter(eq(&"id", id)))?;
-        if res.is_empty() {
-            return Err(DBError::IsEmpty {
-                message: format!("no row with id {}", id),
-            });
-        }
-
-        Ok(res.first().unwrap().to_owned())
-    }
-    pub fn filter(&self, f: Filter) -> DBResult<Vec<T>> {
-        let res = self.by_statement(filter(f))?;
-        Ok(res)
-    }
-    pub fn with_max(&self, field: &str) -> DBResult<Option<T>> {
-        let res = self.by_statement(sort(field, SortDir::Descend).limit(1))?;
         if res.is_empty() {
             return Ok(None);
         }
@@ -207,7 +160,7 @@ impl From<&String> for FieldVal {
 }
 impl From<&FieldVal> for FieldVal {
     fn from(val: &FieldVal) -> FieldVal {
-        (*val).clone()
+        val.clone()
     }
 }
 impl From<bool> for FieldVal {
@@ -239,91 +192,132 @@ impl From<Option<usize>> for FieldVal {
     }
 }
 
-impl From<FieldVal> for usize {
-    fn from(val: FieldVal) -> usize {
-        if let FieldVal::Usize(v) = val {
-            return v;
-        }
+impl TryFrom<FieldVal> for usize {
+    type Error = DBError;
 
-        panic!("wrong enum value")
+    fn try_from(val: FieldVal) -> Result<Self, Self::Error> {
+        match val {
+            FieldVal::Usize(v) => Ok(v),
+            FieldVal::I64(v) => Ok(v.try_into().map_err(|e| DBError::wrap(Box::new(e)))?),
+            _ => Err(DBError::Convert {
+                message: "wrong enum value".into(),
+            }),
+        }
     }
 }
-impl From<FieldVal> for DateTime<Local> {
-    fn from(val: FieldVal) -> DateTime<Local> {
-        if let FieldVal::DateTime(v) = val {
-            return v.into();
-        } else if let FieldVal::I64(v) = val {
-            return Utc.timestamp_millis(v).into();
-        }
+impl TryFrom<FieldVal> for DateTime<Local> {
+    type Error = DBError;
 
-        panic!("wrong enum value")
+    fn try_from(val: FieldVal) -> Result<Self, Self::Error> {
+        match val {
+            FieldVal::DateTime(v) => return Ok(v.into()),
+            FieldVal::I64(v) => return Ok(Utc.timestamp_millis(v).into()),
+            FieldVal::U8Vec(v) => {
+                let strd = String::from_utf8(v).map_err(|e| DBError::wrap(Box::new(e)))?;
+                let dt =
+                    DateTime::parse_from_rfc3339(&strd).map_err(|e| DBError::wrap(Box::new(e)))?;
+                Ok(dt.with_timezone(&Local))
+            }
+            _ => Err(DBError::Convert {
+                message: "wrong enum value".into(),
+            }),
+        }
     }
 }
-impl From<FieldVal> for DateTime<Utc> {
-    fn from(val: FieldVal) -> DateTime<Utc> {
-        if let FieldVal::DateTime(v) = val {
-            return v;
-        } else if let FieldVal::I64(v) = val {
-            return Utc.timestamp_millis(v);
-        }
+impl TryFrom<FieldVal> for DateTime<Utc> {
+    type Error = DBError;
 
-        panic!("wrong enum value")
+    fn try_from(val: FieldVal) -> Result<Self, Self::Error> {
+        match val {
+            FieldVal::DateTime(v) => Ok(v),
+            FieldVal::I64(v) => Ok(Utc.timestamp_millis(v)),
+            FieldVal::U8Vec(v) => {
+                let strd = String::from_utf8(v).map_err(|e| DBError::wrap(Box::new(e)))?;
+                let dt = DateTime::parse_from_rfc3339(&strd).unwrap();
+                return Ok(dt.with_timezone(&Utc));
+            }
+            _ => Err(DBError::Convert {
+                message: "wrong enum value".into(),
+            }),
+        }
     }
 }
-impl From<FieldVal> for String {
-    fn from(val: FieldVal) -> String {
-        if let FieldVal::String(v) = val {
-            return v;
-        } else if let FieldVal::U8Vec(v) = val {
-            return String::from_utf8(v).unwrap();
-        }
+impl TryFrom<FieldVal> for String {
+    type Error = DBError;
 
-        panic!("wrong enum value")
+    fn try_from(val: FieldVal) -> Result<Self, Self::Error> {
+        match val {
+            FieldVal::String(v) => Ok(v),
+            FieldVal::U8Vec(v) => Ok(String::from_utf8(v).map_err(|e| DBError::wrap(Box::new(e)))?),
+            _ => Err(DBError::Convert {
+                message: "wrong enum value".into(),
+            }),
+        }
     }
 }
-impl From<FieldVal> for bool {
-    fn from(val: FieldVal) -> bool {
-        if let FieldVal::Bool(v) = val {
-            return v;
-        }
+impl TryFrom<FieldVal> for bool {
+    type Error = DBError;
 
-        panic!("wrong enum value")
+    fn try_from(val: FieldVal) -> Result<Self, Self::Error> {
+        match val {
+            FieldVal::Bool(v) => Ok(v),
+            FieldVal::I64(v) => Ok(v > 0),
+            _ => Err(DBError::Convert {
+                message: "wrong enum value".into(),
+            }),
+        }
     }
 }
 
-impl From<FieldVal> for Option<usize> {
-    fn from(val: FieldVal) -> Option<usize> {
+impl TryFrom<FieldVal> for Option<usize> {
+    type Error = DBError;
+
+    fn try_from(val: FieldVal) -> Result<Self, Self::Error> {
         if let FieldVal::Null = val {
-            None
+            Ok(None)
         } else {
-            Some(val.into())
+            Ok(Some(
+                val.try_into().map_err(|e| DBError::wrap(Box::new(e)))?,
+            ))
         }
     }
 }
-impl From<FieldVal> for Option<String> {
-    fn from(val: FieldVal) -> Option<String> {
+impl TryFrom<FieldVal> for Option<String> {
+    type Error = DBError;
+
+    fn try_from(val: FieldVal) -> Result<Self, Self::Error> {
         if let FieldVal::Null = val {
-            None
+            Ok(None)
         } else {
-            Some(val.into())
+            Ok(Some(
+                val.try_into().map_err(|e| DBError::wrap(Box::new(e)))?,
+            ))
         }
     }
 }
-impl From<FieldVal> for Option<DateTime<Local>> {
-    fn from(val: FieldVal) -> Option<DateTime<Local>> {
+impl TryFrom<FieldVal> for Option<DateTime<Local>> {
+    type Error = DBError;
+
+    fn try_from(val: FieldVal) -> Result<Self, Self::Error> {
         if let FieldVal::Null = val {
-            None
+            Ok(None)
         } else {
-            Some(val.into())
+            Ok(Some(
+                val.try_into().map_err(|e| DBError::wrap(Box::new(e)))?,
+            ))
         }
     }
 }
-impl From<FieldVal> for Option<DateTime<Utc>> {
-    fn from(val: FieldVal) -> Option<DateTime<Utc>> {
+impl TryFrom<FieldVal> for Option<DateTime<Utc>> {
+    type Error = DBError;
+
+    fn try_from(val: FieldVal) -> Result<Self, Self::Error> {
         if let FieldVal::Null = val {
-            None
+            Ok(None)
         } else {
-            Some(val.into())
+            Ok(Some(
+                val.try_into().map_err(|e| DBError::wrap(Box::new(e)))?,
+            ))
         }
     }
 }
@@ -337,13 +331,5 @@ pub trait StoreObject: Clone + Default {
     fn get_field_val(&self, field_name: &str) -> FieldVal;
     fn get_type_name(&self) -> &'static str;
     fn get_fields_list(&self) -> &'static [&'static str];
-    fn set_field_val(&mut self, field_name: &str, val: impl Into<FieldVal>);
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
+    fn set_field_val(&mut self, field_name: &str, val: impl Into<FieldVal>) -> DBResult<()>;
 }

@@ -9,13 +9,16 @@ use crate::parse::*;
 use crate::report::*;
 use crate::*;
 
-pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec<T: DBRoot, P: Printer>(
+    ctx: &AppContext<T, P>,
+    args: &ArgMatches,
+) -> CliResult<()> {
     let (start, end) = if let Some(v) = args.values_of("period") {
         parse_period(&v.collect::<Vec<_>>().join(" "), &PeriodOpts::default())?
     } else {
         (Local::today().and_hms(0, 0, 0).into(), Local::now().into())
     };
-    let mut intervals = ctx.db.intervals().by_statement(
+    let mut intervals: Vec<Interval> = ctx.db.get_by_statement(
         filter(and(
             and(
                 or(

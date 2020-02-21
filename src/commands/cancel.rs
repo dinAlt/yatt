@@ -1,6 +1,9 @@
 use crate::*;
 
-pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec<T: DBRoot, P: Printer>(
+    ctx: &AppContext<T, P>,
+    _args: &ArgMatches,
+) -> CliResult<()> {
     let res = ctx
         .db
         .cur_running()
@@ -17,7 +20,7 @@ pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
     interval.end = Some(Utc::now());
     interval.deleted = true;
 
-    ctx.db.intervals().save(&interval)?;
+    ctx.db.save(&interval)?;
 
     ctx.printer.interval_cmd(&IntervalCmdData {
         cmd_text: &"Current interval canceled...",

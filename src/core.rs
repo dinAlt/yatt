@@ -2,32 +2,25 @@ use std::convert::TryFrom;
 
 use chrono::prelude::*;
 
-use crate::history::LocalUnique;
 use yatt_orm::errors::{DBError, DBResult};
 use yatt_orm::statement::*;
 use yatt_orm::FieldVal;
-use yatt_orm::{BoxStorage, Identifiers};
+use yatt_orm::{Identifiers, Storage};
 
-pub trait DBRoot {
-    fn nodes(&self) -> BoxStorage<Node>;
-    fn intervals(&self) -> BoxStorage<Interval>;
-}
+pub trait DBRoot: Storage {
+    fn cur_running(&self) -> DBResult<Option<(Node, Interval)>>
+    where
+        Self: Sized,
+    {
+        let interval: Vec<Interval> = self.get_by_filter(eq(Interval::end_n(), FieldVal::Null))?;
 
-impl dyn DBRoot {
-    pub fn cur_running(&self) -> DBResult<Option<(Node, Interval)>> {
-        let intrval = self
-            .intervals()
-            .filter(eq(Interval::end_n(), FieldVal::Null))?;
-
-        if intrval.is_empty() {
+        if interval.is_empty() {
             return Ok(None);
         }
 
-        let interval = intrval[0].clone();
+        let interval = interval[0].clone();
 
-        let node = self
-            .nodes()
-            .filter(eq(Node::id_n(), interval.node_id.unwrap()))?;
+        let node: Vec<Node> = self.get_by_filter(eq(Node::id_n(), interval.node_id.unwrap()))?;
 
         if node.is_empty() {
             return Err(DBError::Unexpected {
@@ -43,8 +36,11 @@ impl dyn DBRoot {
         Ok(Some((node, interval)))
     }
 
-    pub fn last_running(&self) -> DBResult<Option<(Node, Interval)>> {
-        let interval = self.intervals().by_statement(
+    fn last_running(&self) -> DBResult<Option<(Node, Interval)>>
+    where
+        Self: Sized,
+    {
+        let interval: Vec<Interval> = self.get_by_statement(
             filter(ne(Interval::deleted_n(), 1))
                 .sort(&Interval::end_n(), SortDir::Descend)
                 .limit(1),
@@ -56,9 +52,7 @@ impl dyn DBRoot {
 
         let interval = interval.first().unwrap();
 
-        let node = self
-            .nodes()
-            .filter(eq(Node::id_n(), interval.node_id.unwrap()))?;
+        let node: Vec<Node> = self.get_by_filter(eq(Node::id_n(), interval.node_id.unwrap()))?;
 
         if node.is_empty() {
             return Err(DBError::Unexpected {
@@ -74,7 +68,10 @@ impl dyn DBRoot {
         Ok(Some((node, interval.to_owned())))
     }
 
-    pub fn find_path(&self, path: &[&str]) -> DBResult<Vec<Node>> {
+    fn find_path(&self, path: &[&str]) -> DBResult<Vec<Node>>
+    where
+        Self: Sized,
+    {
         let mut parent = FieldVal::Null;
         let mut res = Vec::new();
         for p in path.iter() {
@@ -90,7 +87,10 @@ impl dyn DBRoot {
     }
 
     /// Crates all not exist node of path, and returns all nodes.
-    pub fn create_path(&self, path: &[&str]) -> DBResult<Vec<Node>> {
+    fn create_path(&self, path: &[&str]) -> DBResult<Vec<Node>>
+    where
+        Self: Sized,
+    {
         if path.is_empty() {
             return Err(DBError::Unexpected {
                 message: "provided value for path is empty".to_string(),
@@ -121,7 +121,7 @@ impl dyn DBRoot {
                 closed: false,
                 deleted: false,
             };
-            let id = self.nodes().save(&node)?;
+            let id = self.save(&node)?;
             node.id = id;
             parent_id = Some(id);
             nodes.push(node.clone());
@@ -132,12 +132,15 @@ impl dyn DBRoot {
 
     /// Returns ancestors of node with givent id, inluding
     /// the node with given id itself.
-    pub fn ancestors(&self, id: usize) -> DBResult<Vec<Node>> {
+    fn ancestors(&self, id: usize) -> DBResult<Vec<Node>>
+    where
+        Self: Sized,
+    {
         let mut res = Vec::new();
         let mut next = Some(id);
 
         while next.is_some() {
-            let node = self.nodes().by_id(next.unwrap())?;
+            let node: Node = self.get_by_id(next.unwrap())?;
             next = node.parent_id;
             res.push(node);
         }
@@ -147,8 +150,11 @@ impl dyn DBRoot {
         Ok(res)
     }
 
-    fn find_path_part(&self, name: &str, parent_id: &FieldVal) -> DBResult<Option<Node>> {
-        let nodes = self.nodes().filter(and(
+    fn find_path_part(&self, name: &str, parent_id: &FieldVal) -> DBResult<Option<Node>>
+    where
+        Self: Sized,
+    {
+        let nodes: Vec<Node> = self.get_by_filter(and(
             eq(Node::parent_id_n(), parent_id),
             eq(Node::label_n(), name),
         ))?;
@@ -192,11 +198,6 @@ impl ToString for Node {
         self.label.to_owned()
     }
 }
-impl LocalUnique for Node {
-    fn get_local_id(&self) -> usize {
-        self.id
-    }
-}
 
 #[derive(Debug, Clone, Copy, Identifiers)]
 pub struct Interval {
@@ -227,21 +228,5 @@ impl ToString for Interval {
             None => "never".to_string(),
         };
         format!("[started: {} stopped: {}]", self.begin, end)
-    }
-}
-
-impl LocalUnique for Interval {
-    fn get_local_id(&self) -> usize {
-        self.id
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn it_crates_path() {
-        assert_eq!(Node::id_n(), String::from("id"));
-        assert_eq!(Node::label_n(), String::from("label"));
     }
 }

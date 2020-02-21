@@ -9,7 +9,7 @@ mod start;
 mod state;
 mod stop;
 
-pub fn exec(ctx: &AppContext) -> CliResult<()> {
+pub fn exec<T: DBRoot, P: Printer>(ctx: &AppContext<T, P>) -> CliResult<()> {
     match ctx.args.subcommand() {
         ("start", Some(m)) => start::exec(ctx, m),
         ("stop", Some(m)) => stop::exec(ctx, m),

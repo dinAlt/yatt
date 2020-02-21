@@ -4,7 +4,10 @@ use crossterm_input::input;
 use std::convert::TryInto;
 use yatt_orm::{statement::*, DBError, FieldVal};
 
-pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec<T: DBRoot, P: Printer>(
+    ctx: &AppContext<T, P>,
+    args: &ArgMatches,
+) -> CliResult<()> {
     let no_prompt = args.is_present("yes");
     let id: i64 = args
         .value_of("ID")
@@ -16,7 +19,7 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
 
     let mut interval = if id < 0 {
         let offset: usize = (-id).try_into().unwrap();
-        let intervals = ctx.db.intervals().by_statement(
+        let intervals: Vec<Interval> = ctx.db.get_by_statement(
             filter(and(
                 ne(Interval::deleted_n(), 1),
                 ne(Interval::end_n(), FieldVal::Null),
@@ -32,7 +35,7 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         intervals.first().unwrap().to_owned()
     } else {
         let id: usize = id.try_into().unwrap();
-        ctx.db.intervals().by_id(id).map_err(|source| {
+        ctx.db.get_by_id::<Interval>(id).map_err(|source| {
             if let DBError::IsEmpty { .. } = source {
                 return CliError::Cmd {
                     message: "There is no interval with given ID".into(),
@@ -43,10 +46,9 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         })?
     };
 
-    let task = ctx
+    let task: Node = ctx
         .db
-        .nodes()
-        .by_id(interval.node_id.unwrap())
+        .get_by_id(interval.node_id.unwrap())
         .map_err(|source| CliError::DB { source })?;
     let task = ctx
         .db
@@ -62,7 +64,6 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
 
     if no_prompt {
         ctx.db
-            .intervals()
             .save(&interval)
             .map_err(|source| CliError::DB { source })?;
 
@@ -78,7 +79,6 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         let input = input();
         if input.read_line()?.trim().to_lowercase() == "y" {
             ctx.db
-                .intervals()
                 .save(&interval)
                 .map_err(|source| CliError::DB { source })?;
             ctx.printer.cmd("Successfully deleted...")

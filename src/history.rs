@@ -1,25 +1,25 @@
-use std::rc::Rc;
+use std::convert::TryInto;
 
 use chrono::Utc;
 use uuid::Uuid;
 
-use crate::core::{DBRoot, Interval, Node};
-use yatt_orm::statement::Statement;
+use crate::core::DBRoot;
+use yatt_orm::statement::{Filter, Statement};
 use yatt_orm::{
-    BoxStorage, DBError, DBResult, HistoryRecord, HistoryRecordType, HistoryStorage, Storage,
+    DBError, DBResult, HistoryRecord, HistoryRecordType, HistoryStorage, Storage, StoreObject,
 };
 
-pub(crate) struct DBWatcher {
-    db: Box<dyn DBRoot>,
-    history_storage: Rc<dyn HistoryStorage>,
+pub(crate) struct DBWatcher<T: DBRoot, S: HistoryStorage> {
+    db: T,
+    history_storage: S,
 }
 
-pub(crate) trait LocalUnique {
-    fn get_local_id(&self) -> usize;
-}
-
-impl DBWatcher {
-    pub fn new(db: Box<dyn DBRoot>, history_storage: Rc<dyn HistoryStorage>) -> Self {
+impl<T, S> DBWatcher<T, S>
+where
+    T: DBRoot,
+    S: HistoryStorage,
+{
+    pub fn new(db: T, history_storage: S) -> Self {
         DBWatcher {
             db,
             history_storage,
@@ -27,51 +27,27 @@ impl DBWatcher {
     }
 }
 
-impl DBRoot for DBWatcher {
-    fn nodes(&self) -> BoxStorage<Node> {
-        Box::new(StorageWatcher::new(
-            "nodes",
-            self.db.nodes(),
-            Rc::clone(&self.history_storage),
-        ))
-    }
-    fn intervals(&self) -> BoxStorage<Interval> {
-        Box::new(StorageWatcher::new(
-            "intervals",
-            self.db.intervals(),
-            Rc::clone(&self.history_storage),
-        ))
-    }
+impl<T, S> DBRoot for DBWatcher<T, S>
+where
+    T: DBRoot,
+    S: HistoryStorage,
+{
 }
 
-struct StorageWatcher<T: LocalUnique> {
-    entity_type: &'static str,
-    storage: BoxStorage<T>,
-    history_storage: Rc<dyn HistoryStorage>,
-}
-
-impl<T: LocalUnique> StorageWatcher<T> {
-    fn new(
-        entity_type: &'static str,
-        storage: BoxStorage<T>,
-        history_storage: Rc<dyn HistoryStorage>,
-    ) -> Self {
-        StorageWatcher {
-            entity_type,
-            storage,
-            history_storage,
-        }
-    }
-}
-
-impl<T: LocalUnique> Storage for StorageWatcher<T> {
-    type Item = T;
-    fn save(&self, item: &Self::Item) -> DBResult<usize> {
-        let entity_id = self.storage.save(item)?;
+impl<T, S> Storage for DBWatcher<T, S>
+where
+    T: DBRoot,
+    S: HistoryStorage,
+{
+    fn save(&self, item: &impl StoreObject) -> DBResult<usize>
+    where
+        Self: Sized,
+    {
+        let entity_id = self.db.save(item)?;
 
         let uid = self
             .history_storage
-            .get_entity_guid(item.get_local_id(), self.entity_type);
+            .get_entity_guid(item.get_field_val("id").try_into()?, item.get_type_name());
 
         let (uid, is_new) = match uid {
             Ok(uid) => (uid, false),
@@ -94,28 +70,43 @@ impl<T: LocalUnique> Storage for StorageWatcher<T> {
             date: Utc::now(),
             uuid: uid,
             record_type,
-            entity_type: self.entity_type.to_string(),
+            entity_type: item.get_type_name().into(),
             entity_id,
         })?;
 
         Ok(entity_id)
     }
-    fn all(&self) -> DBResult<Vec<Self::Item>> {
-        self.storage.all()
+    fn get_all<U: StoreObject>(&self) -> DBResult<Vec<U>>
+    where
+        Self: Sized,
+    {
+        self.db.get_all()
     }
-    fn remove(&self, id: usize) -> DBResult<()> {
-        self.storage.remove(id)?;
+    fn remove_by_filter<U: StoreObject>(&self, filter: Filter) -> DBResult<()>
+    where
+        Self: Sized,
+    {
+        let rows: Vec<U> = self.db.get_by_filter(filter.clone())?;
+        self.db.remove_by_filter::<U>(filter)?;
 
-        let uid = self.history_storage.get_entity_guid(id, self.entity_type)?;
-        self.history_storage.push_record(HistoryRecord {
-            date: Utc::now(),
-            uuid: uid,
-            record_type: HistoryRecordType::Delete,
-            entity_type: self.entity_type.to_string(),
-            entity_id: id,
-        })
+        for r in rows {
+            let uid = self
+                .history_storage
+                .get_entity_guid(r.get_field_val("id").try_into()?, r.get_type_name())?;
+            self.history_storage.push_record(HistoryRecord {
+                date: Utc::now(),
+                uuid: uid,
+                record_type: HistoryRecordType::Delete,
+                entity_type: r.get_type_name().into(),
+                entity_id: r.get_field_val("id").try_into()?,
+            })?;
+        }
+        Ok(())
     }
-    fn by_statement(&self, s: Statement) -> DBResult<Vec<Self::Item>> {
-        self.storage.by_statement(s)
+    fn get_by_statement<U: StoreObject>(&self, s: Statement) -> DBResult<Vec<U>>
+    where
+        Self: Sized,
+    {
+        self.db.get_by_statement(s)
     }
 }

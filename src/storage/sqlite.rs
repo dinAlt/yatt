@@ -2,10 +2,9 @@ use std::convert::TryFrom;
 use std::path::Path;
 use std::rc::Rc;
 
-use chrono::prelude::*;
-use rusqlite::{params, types::ValueRef, Connection, Result as SQLITEResult, ToSql, NO_PARAMS};
+use rusqlite::{types::ValueRef, Connection, Result as SQLITEResult, ToSql, NO_PARAMS};
 
-use crate::core::*;
+use crate::core::DBRoot;
 use yatt_orm::errors::*;
 use yatt_orm::statement::*;
 use yatt_orm::*;
@@ -52,10 +51,37 @@ impl DB {
 
         Ok(())
     }
+
+    fn query_rows<T: StoreObject>(&self, q: &str) -> DBResult<Vec<T>> {
+        let mut q = self
+            .con
+            .prepare(&q)
+            .map_err(|e| DBError::wrap(Box::new(e)))?;
+
+        let mut rows = q.query(NO_PARAMS).map_err(|e| DBError::wrap(Box::new(e)))?;
+        let mut res = Vec::new();
+        while let Some(r) = rows.next().map_err(|e| DBError::wrap(Box::new(e)))? {
+            let mut strct = T::default();
+            for (n, fld_name) in strct.get_fields_list().iter().enumerate() {
+                let v = r.get_raw(n);
+                let v: FieldVal = match v {
+                    ValueRef::Integer(vv) => vv.into(),
+                    ValueRef::Null => FieldVal::Null,
+                    ValueRef::Real(vv) => vv.into(),
+                    ValueRef::Text(vv) => vv.into(),
+                    _ => unreachable!(),
+                };
+                strct.set_field_val(fld_name, v)?;
+            }
+            res.push(strct);
+        }
+
+        Ok(res)
+    }
 }
 
-impl St for DB {
-    fn save(&self, item: impl StoreObject) -> DBResult<usize> {
+impl Storage for DB {
+    fn save(&self, item: &impl StoreObject) -> DBResult<usize> {
         let id = if let FieldVal::Usize(id) = item.get_field_val("id") {
             id
         } else {
@@ -67,7 +93,14 @@ impl St for DB {
         let field_list = item.get_fields_list();
 
         let id_idx = field_list.iter().position(|&v| v == "id").unwrap();
-
+        let comma_non_id_fields = field_list
+            .iter()
+            .enumerate()
+            .filter_map(|(n, &v)| if n == id_idx { None } else { Some(v) })
+            .enumerate()
+            .map(|(n, v)| format!("{} = ?{}", v, n + 1))
+            .collect::<Vec<String>>()
+            .join(", ");
         let mut params: Vec<Box<dyn ToSql>> = field_list
             .iter()
             .enumerate()
@@ -97,23 +130,10 @@ impl St for DB {
 
         let sql = if id > 0 {
             let sql = format!(
-                "update {} set {} where id = ?{} ",
+                "update {}s set {} where id = ?{} ",
                 item.get_type_name(),
-                field_list
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(n, &v)| {
-                        if n == id_idx {
-                            None
-                        } else {
-                            Some(v)
-                        }
-                    })
-                    .enumerate()
-                    .map(|(n, v)| format!("{} = ?{}", v, n + 1))
-                    .collect::<Vec<String>>()
-                    .join(", "),
-                field_list.len() - 1
+                &comma_non_id_fields,
+                field_list.len()
             );
 
             params.push(Box::new(isize::try_from(id).unwrap()));
@@ -121,21 +141,10 @@ impl St for DB {
             sql
         } else {
             format!(
-                "insert into {} ({}) values ({})",
+                "insert into {}s ({}) values ({})",
                 item.get_type_name(),
-                field_list
-                    .iter()
-                    .enumerate()
-                    .filter_map(|(n, &v)| {
-                        if n == id_idx {
-                            None
-                        } else {
-                            Some(v)
-                        }
-                    })
-                    .collect::<Vec<&str>>()
-                    .join(", "),
-                (1..field_list.len() - 1)
+                &comma_non_id_fields,
+                (1..field_list.len())
                     .map(|v| format!("?{}", v))
                     .collect::<Vec<String>>()
                     .join(", ")
@@ -155,40 +164,18 @@ impl St for DB {
     fn get_all<T: StoreObject>(&self) -> DBResult<Vec<T>> {
         let strct = T::default();
         let q = format!(
-            "select {} from {}",
+            "select {} from {}s",
             strct.get_fields_list().join(", "),
             strct.get_type_name()
         );
 
-        let mut q = self
-            .con
-            .prepare(&q)
-            .map_err(|e| DBError::wrap(Box::new(e)))?;
-
-        let mut rows = q.query(NO_PARAMS).map_err(|e| DBError::wrap(Box::new(e)))?;
-        let mut res = Vec::new();
-        while let Some(r) = rows.next().map_err(|e| DBError::wrap(Box::new(e)))? {
-            let mut strct = T::default();
-            for (n, fld_name) in strct.get_fields_list().iter().enumerate() {
-                let v = r.get_raw(n);
-                let v: FieldVal = match v {
-                    ValueRef::Integer(vv) => vv.into(),
-                    ValueRef::Null => FieldVal::Null,
-                    ValueRef::Real(vv) => vv.into(),
-                    ValueRef::Text(vv) => vv.into(),
-                    _ => unreachable!(),
-                };
-                strct.set_field_val(fld_name, v);
-            }
-            res.push(strct);
-        }
-
-        Ok(res)
+        self.query_rows(&q)
     }
-    fn remove_by_filter(&self, object_type_name: &str, filter: Filter) -> DBResult<()> {
+    fn remove_by_filter<T: StoreObject>(&self, filter: Filter) -> DBResult<()> {
+        let strct = T::default();
         let q = format!(
-            "update {} set deleted = 1 {}",
-            object_type_name,
+            "update {}s set deleted = 1 {}",
+            strct.get_type_name(),
             filter.build_where()
         );
         self.con
@@ -199,265 +186,18 @@ impl St for DB {
     fn get_by_statement<T: StoreObject>(&self, s: Statement) -> DBResult<Vec<T>> {
         let strct = T::default();
         let q = format!(
-            "{} {} from {} {}",
+            "{} {} from {}s {}",
             s.build_select(),
             strct.get_fields_list().join(", "),
             strct.get_type_name(),
             s.build_where()
         );
 
-        let mut q = self
-            .con
-            .prepare(&q)
-            .map_err(|e| DBError::wrap(Box::new(e)))?;
-        let mut rows = q.query(NO_PARAMS).map_err(|e| DBError::wrap(Box::new(e)))?;
-        let mut res = Vec::new();
-        while let Some(r) = rows.next().map_err(|e| DBError::wrap(Box::new(e)))? {
-            let mut strct = T::default();
-            for (n, fld_name) in strct.get_fields_list().iter().enumerate() {
-                let v = r.get_raw(n);
-                let v: FieldVal = match v {
-                    ValueRef::Integer(vv) => vv.into(),
-                    ValueRef::Null => FieldVal::Null,
-                    ValueRef::Real(vv) => vv.into(),
-                    ValueRef::Text(vv) => vv.into(),
-                    _ => unreachable!(),
-                };
-                strct.set_field_val(fld_name, v);
-            }
-            res.push(strct);
-        }
-
-        Ok(res)
+        self.query_rows(&q)
     }
 }
 
-impl DBRoot for DB {
-    fn nodes(&self) -> BoxStorage<Node> {
-        Box::new(Nodes::new(Rc::clone(&self.con)))
-    }
-    fn intervals(&self) -> BoxStorage<Interval> {
-        Box::new(Intervals::new(Rc::clone(&self.con)))
-    }
-}
-
-pub struct Nodes {
-    con: Rc<Connection>,
-}
-
-impl Nodes {
-    pub fn new(con: Rc<Connection>) -> Nodes {
-        Nodes { con }
-    }
-
-    fn select(&self, select_str: &str, where_str: &str) -> SQLITEResult<Vec<Node>> {
-        let sql = format!(
-            "{}
-        id,
-        parent_id,
-        label,
-        closed,
-        created,
-        deleted
-            from nodes {}",
-            select_str, where_str
-        );
-
-        let mut stmt = self.con.prepare(&sql)?;
-        let mut rows = stmt.query(NO_PARAMS)?;
-        let mut res = Vec::new();
-        while let Some(row) = rows.next()? {
-            let id: isize = row.get(0)?;
-            let id = usize::try_from(id).unwrap();
-            let parent_id: Option<isize> = row.get(1)?;
-            let parent_id = match parent_id {
-                Some(v) => Some(usize::try_from(v).unwrap()),
-                None => None,
-            };
-            res.push(Node {
-                id,
-                parent_id,
-                label: row.get(2)?,
-                closed: row.get(3)?,
-                created: row.get(4)?,
-                deleted: row.get(5)?,
-            })
-        }
-        SQLITEResult::Ok(res)
-    }
-}
-
-impl Storage for Nodes {
-    type Item = Node;
-    fn save(&self, node: &Node) -> DBResult<usize> {
-        let parent_id = node.parent_id.map(|r| isize::try_from(r).unwrap());
-
-        if node.id > 0 {
-            let id = isize::try_from(node.id).unwrap();
-
-            self.con
-                .execute(
-                    "update nodes
-                set label = ?1,
-                closed = ?2,
-                parent_id = ?3,
-                deleted = ?4
-                where id = ?5",
-                    params![node.label, node.closed, parent_id, id, node.deleted],
-                )
-                .map_err(|s| DBError::wrap(Box::new(s)))?;
-            return Ok(node.id);
-        };
-        self.con
-            .execute(
-                "insert into nodes (
-                        label,
-                        parent_id,
-                        created, 
-                        deleted) values (?1, ?2, ?3, ?4)",
-                params![node.label, parent_id, Utc::now(), node.deleted],
-            )
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-        Ok(usize::try_from(self.con.last_insert_rowid()).unwrap())
-    }
-    fn all(&self) -> DBResult<Vec<Self::Item>> {
-        let res = self
-            .select("select", "where deleted = 0")
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-
-        Ok(res)
-    }
-    fn remove(&self, id: usize) -> DBResult<()> {
-        let id = isize::try_from(id).unwrap();
-        self.con
-            .execute("update nodes set deleted = 1 where id = ?1", params![id])
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-
-        Ok(())
-    }
-    fn by_statement(&self, statement: Statement) -> DBResult<Vec<Self::Item>> {
-        let res = self
-            .select(&statement.build_select(), &statement.build_where())
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-
-        Ok(res)
-    }
-}
-
-pub struct Intervals {
-    con: Rc<Connection>,
-}
-
-impl Intervals {
-    pub fn new(con: Rc<Connection>) -> Intervals {
-        Intervals { con }
-    }
-    fn select(&self, select_str: &str, where_str: &str) -> SQLITEResult<Vec<Interval>> {
-        let sql = format!(
-            "{}
-        id,
-        node_id,
-        begin,
-        end,
-        deleted,
-        closed
-            from intervals {}",
-            select_str, where_str
-        );
-
-        let mut stmt = self.con.prepare(&sql)?;
-        let mut rows = stmt.query(NO_PARAMS)?;
-        let mut res = Vec::new();
-        while let Some(row) = rows.next()? {
-            let id: isize = row.get(0)?;
-            let id = usize::try_from(id).unwrap();
-            let node_id: Option<isize> = row.get(1)?;
-            let node_id = match node_id {
-                Some(v) => Some(usize::try_from(v).unwrap()),
-                None => None,
-            };
-            res.push(Interval {
-                id,
-                node_id,
-                begin: row.get(2)?,
-                end: row.get(3)?,
-                deleted: row.get(4)?,
-                closed: row.get(5)?,
-            })
-        }
-        SQLITEResult::Ok(res)
-    }
-}
-
-impl Storage for Intervals {
-    type Item = Interval;
-    fn save(&self, interval: &Interval) -> DBResult<usize> {
-        let node_id = interval.node_id.map(|r| isize::try_from(r).unwrap());
-
-        if interval.id > 0 {
-            let id = isize::try_from(interval.id).unwrap();
-            self.con
-                .execute(
-                    "update intervals
-                set node_id = ?1,
-                begin = ?2,
-                end = ?3,
-                deleted = ?4,
-                closed = ?5
-                where id = ?6",
-                    params![
-                        node_id,
-                        interval.begin,
-                        interval.end,
-                        interval.deleted,
-                        interval.closed,
-                        id
-                    ],
-                )
-                .map_err(|s| DBError::wrap(Box::new(s)))?;
-            return Ok(interval.id);
-        };
-        self.con
-            .execute(
-                "insert into intervals (node_id, begin, end, deleted, closed) 
-                values (?1, ?2, ?3, ?4, ?5)",
-                params![
-                    node_id,
-                    interval.begin,
-                    interval.end,
-                    interval.deleted,
-                    interval.closed
-                ],
-            )
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-        Ok(usize::try_from(self.con.last_insert_rowid()).unwrap())
-    }
-    fn all(&self) -> DBResult<Vec<Self::Item>> {
-        let res = self
-            .select("select", "where deleted = 0")
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-
-        Ok(res)
-    }
-    fn remove(&self, id: usize) -> DBResult<()> {
-        let id = isize::try_from(id).unwrap();
-        self.con
-            .execute(
-                "update intervals set deleted = 1 where id = ?1",
-                params![id],
-            )
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-
-        Ok(())
-    }
-    fn by_statement(&self, statement: Statement) -> DBResult<Vec<Self::Item>> {
-        let res = self
-            .select(&statement.build_select(), &statement.build_where())
-            .map_err(|s| DBError::wrap(Box::new(s)))?;
-
-        Ok(res)
-    }
-}
+impl DBRoot for DB {}
 
 trait BuildSelect {
     fn build_select(&self) -> String;
@@ -567,6 +307,3 @@ impl BuildWhere for LogOp<'_> {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {}

@@ -5,8 +5,8 @@ extern crate lazy_static;
 
 use std::fs;
 use std::path::PathBuf;
-use std::rc::Rc;
 
+use crate::core::DBRoot;
 use chrono::prelude::*;
 use clap;
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
@@ -41,12 +41,16 @@ pub struct CrateInfo<'a> {
     pub description: &'a str,
 }
 
-pub struct AppContext<'a> {
+pub struct AppContext<'a, T, P>
+where
+    T: DBRoot,
+    P: Printer,
+{
     pub args: ArgMatches<'a>,
     pub conf: AppConfig,
     pub root: PathBuf,
-    pub printer: Box<dyn Printer>,
-    pub db: Box<dyn core::DBRoot>,
+    pub printer: P,
+    pub db: T,
 }
 
 #[derive(Debug, Deserialize)]
@@ -108,51 +112,61 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
         });
     }
 
+    let mut conf = parse_config(&base_path)?;
+
+    #[cfg(debug_assertions)]
+    debug_config(&mut conf);
+
+    let db = match DB::new(base_path.join(&conf.db_path)) {
+        Ok(db) => db,
+        Err(e) => return Err(CliError::DB { source: e }),
+    };
+
+    let history_db_path = base_path.join(&conf.history_db_path);
+    if history_db_path.exists() {
+        let hs = {
+            match history_storage::sqlite::DB::new(history_db_path) {
+                Ok(db) => db,
+                Err(e) => return Err(CliError::DB { source: e }),
+            }
+        };
+        let db = DBWatcher::new(db, hs);
+        run_app(db, base_path, &info, conf)
+    } else {
+        run_app(db, base_path, &info, conf)
+    }
+}
+
+fn run_app<T: DBRoot>(
+    db: T,
+    base_path: PathBuf,
+    info: &CrateInfo,
+    conf: AppConfig,
+) -> CliResult<()> {
     let mut skin = MadSkin::default();
     skin.set_headers_fg(rgb(255, 187, 0));
     skin.bold.set_fg(Yellow);
     skin.italic.set_fgbg(Magenta, rgb(30, 30, 40));
     skin.bullet = StyledChar::from_fg_char(Yellow, '⟡');
     skin.quote_mark.set_fg(Yellow);
-    let mut conf = parse_config(&base_path)?;
 
-    #[cfg(debug_assertions)]
-    debug_config(&mut conf);
-
-    let mut db: Box<dyn core::DBRoot> = Box::new({
-        match DB::new(base_path.join(&conf.db_path)) {
-            Ok(db) => db,
-            Err(e) => return Err(CliError::DB { source: e }),
-        }
-    });
-
-    let history_db_path = base_path.join(&conf.history_db_path);
-    if history_db_path.exists() {
-        let hs = Rc::new({
-            match history_storage::sqlite::DB::new(history_db_path) {
-                Ok(db) => db,
-                Err(e) => return Err(CliError::DB { source: e }),
-            }
-        });
-        db = Box::new(DBWatcher::new(db, hs));
-    }
+    let printer = TermPrinter::default();
     let app = AppContext {
-        args: make_args(&info),
+        args: make_args(info),
         conf,
         root: base_path,
-        printer: Box::new(TermPrinter::default()),
+        printer,
         db,
     };
     let res = commands::exec(&app);
-
     if res.is_err() {
-        print_error(res.as_ref().unwrap_err(), app.printer);
+        print_error(res.as_ref().unwrap_err(), &app.printer);
     }
 
     res
 }
 
-fn print_error(e: &CliError, p: Box<dyn Printer>) {
+fn print_error<T: Printer>(e: &CliError, p: &T) {
     if let CliError::Task { source } = e {
         match source {
             TaskError::Cmd { message } => p.error(message),
@@ -177,13 +191,4 @@ fn print_error(e: &CliError, p: Box<dyn Printer>) {
 
 fn debug_config(conf: &mut AppConfig) {
     conf.db_path = "yatt_debug.db".to_string();
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn it_works() {
-        // assert_eq!(test_command(), format!("{}", 12));
-    }
 }

@@ -1,7 +1,10 @@
 use crate::core::Interval;
 use crate::*;
 
-pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec<T: DBRoot, P: Printer>(
+    ctx: &AppContext<T, P>,
+    args: &ArgMatches,
+) -> CliResult<()> {
     let res = ctx
         .db
         .cur_running()
@@ -30,7 +33,7 @@ pub(crate) fn exec(ctx: &AppContext, args: &ArgMatches) -> CliResult<()> {
         deleted: false,
         closed: false,
     };
-    ctx.db.intervals().save(&interval)?;
+    ctx.db.save(&interval)?;
 
     ctx.printer.interval_cmd(&IntervalCmdData {
         cmd_text: &"Starting...",

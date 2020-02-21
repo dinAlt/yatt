@@ -1,6 +1,9 @@
 use crate::*;
 
-pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec<T: DBRoot, P: Printer>(
+    ctx: &AppContext<T, P>,
+    _args: &ArgMatches,
+) -> CliResult<()> {
     let res = ctx
         .db
         .cur_running()

@@ -1,6 +1,9 @@
 use crate::*;
 
-pub(crate) fn exec(_ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec<T: DBRoot, P: Printer>(
+    _ctx: &AppContext<T, P>,
+    _args: &ArgMatches,
+) -> CliResult<()> {
     Ok(())
 }
 

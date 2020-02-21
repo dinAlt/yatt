@@ -99,7 +99,7 @@ fn impl_set_field_val(name: &syn::Ident, fields: &syn::Fields) -> proc_macro2::T
                 if let Some(ident) = &f.ident {
                     let quote_fn = format!("{}", ident);
                     return Some(quote! {
-                        #quote_fn => self.#ident = val.into(),
+                        #quote_fn => self.#ident = std::convert::TryInto::try_into(val)?,
                     });
                 };
             };
@@ -110,12 +110,13 @@ fn impl_set_field_val(name: &syn::Ident, fields: &syn::Fields) -> proc_macro2::T
     let quote_name = format!("{}", name);
 
     quote! {
-        fn set_field_val(&mut self, field_name: &str, val: impl Into<yatt_orm::FieldVal>) {
+        fn set_field_val(&mut self, field_name: &str, val: impl Into<yatt_orm::FieldVal>) -> yatt_orm::DBResult<()> {
             let val: yatt_orm::FieldVal = val.into();
             match field_name {
                 #(#res)*
                  _ => panic!(format!("there is no field {} in struct {}", field_name, #quote_name)),
              }
+            Ok(())
         }
     }
 }
@@ -158,32 +159,3 @@ fn get_fields_list(fields: &syn::Fields) -> Vec<String> {
         })
         .collect()
 }
-
-// fn impl_field_list(ast: &syn::DeriveInput) -> TokenStream {
-//     let name = &ast.ident;
-//     let c_name = format_ident!("{}_field_names", name);
-//     let fields = match &ast.data {
-//         syn::Data::Struct(s) => {
-//             let mut res = vec![];
-//             for f in s.fields.iter() {
-//                 if let syn::Visibility::Public(_) = f.vis {
-//                     if let Some(ident) = &f.ident {
-//                         res.push(format!("{}", ident));
-//                     }
-//                 }
-//             }
-//             res
-//         }
-//         _ => unreachable!(),
-//     };
-//     let gen = quote! {
-//         const #c_name: &'static [&'static str] = &[#(#fields),*];
-//         impl FieldList for #name {
-//             fn field_list() -> &'static [&'static str] {
-//                 #c_name
-//             }
-//         }
-//     };
-
-//     gen.into()
-// }

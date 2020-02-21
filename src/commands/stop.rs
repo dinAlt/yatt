@@ -1,6 +1,9 @@
 use crate::*;
 
-pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
+pub(crate) fn exec<T: DBRoot, P: Printer>(
+    ctx: &AppContext<T, P>,
+    _args: &ArgMatches,
+) -> CliResult<()> {
     let res = ctx
         .db
         .cur_running()
@@ -17,7 +20,7 @@ pub(crate) fn exec(ctx: &AppContext, _args: &ArgMatches) -> CliResult<()> {
     let (node, mut interval) = res.unwrap();
 
     interval.end = Some(Utc::now());
-    ctx.db.intervals().save(&interval)?;
+    ctx.db.save(&interval)?;
 
     let task = &ctx.db.ancestors(node.id)?;
 
