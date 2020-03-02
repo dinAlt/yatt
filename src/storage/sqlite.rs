@@ -93,14 +93,11 @@ impl Storage for DB {
         let field_list = item.get_fields_list();
 
         let id_idx = field_list.iter().position(|&v| v == "id").unwrap();
-        let comma_non_id_fields = field_list
+        let non_id_fields = field_list
             .iter()
             .enumerate()
             .filter_map(|(n, &v)| if n == id_idx { None } else { Some(v) })
-            .enumerate()
-            .map(|(n, v)| format!("{} = ?{}", v, n + 1))
-            .collect::<Vec<String>>()
-            .join(", ");
+            .enumerate();
         let mut params: Vec<Box<dyn ToSql>> = field_list
             .iter()
             .enumerate()
@@ -132,7 +129,10 @@ impl Storage for DB {
             let sql = format!(
                 "update {}s set {} where id = ?{} ",
                 item.get_type_name(),
-                &comma_non_id_fields,
+                non_id_fields
+                    .map(|(n, v)| format!("{} = ?{}", v, n + 1))
+                    .collect::<Vec<String>>()
+                    .join(", "),
                 field_list.len()
             );
 
@@ -143,14 +143,16 @@ impl Storage for DB {
             format!(
                 "insert into {}s ({}) values ({})",
                 item.get_type_name(),
-                &comma_non_id_fields,
+                non_id_fields
+                    .map(|(_, v)| format!("{}", v))
+                    .collect::<Vec<String>>()
+                    .join(", "),
                 (1..field_list.len())
                     .map(|v| format!("?{}", v))
                     .collect::<Vec<String>>()
                     .join(", ")
             )
         };
-
         self.con
             .execute(&sql, params)
             .map_err(|e| DBError::wrap(Box::new(e)))?;
