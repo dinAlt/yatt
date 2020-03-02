@@ -34,8 +34,13 @@ members = [
   "yatt_orm/yatt_orm_derive",
 ]
 
+[profile.dev]
+incremental = true
+
 [profile.release]
+opt-level = "s"
 lto = true
-codegen-units = 1
+panic = "abort"
+codegen-units = 4
 
 
