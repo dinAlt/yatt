@@ -44,6 +44,6 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
     app.subcommand(
         SubCommand::with_name("state")
             .alias("status")
-            .about("show running state"),
+            .about("Show running state"),
     )
 }

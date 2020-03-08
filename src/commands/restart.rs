@@ -72,5 +72,5 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
 }
 
 pub fn register<'a>(app: App<'a, 'a>) -> App {
-    app.subcommand(SubCommand::with_name("restart").about("restart last task"))
+    app.subcommand(SubCommand::with_name("restart").about("Restart last task"))
 }

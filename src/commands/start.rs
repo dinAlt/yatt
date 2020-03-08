@@ -51,7 +51,7 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
     app.subcommand(
         SubCommand::with_name("start")
             .alias("run")
-            .about("Starts new task, or continues existing")
+            .about("Start new task, or continues existing")
             .setting(AppSettings::ArgRequiredElseHelp)
             .arg(
                 Arg::with_name("TASK")
