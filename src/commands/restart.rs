@@ -34,7 +34,8 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
     if interval.is_empty() {
         return Err(CliError::Task {
             source: TaskError::Cmd {
-                message: "There is no priviosly started tasks.".to_string(),
+                message: "There is no priviosly started tasks."
+                    .to_string(),
             },
         });
     }
@@ -50,7 +51,10 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         .get_by_filter(eq(Node::id_n(), interval.node_id.unwrap()))?;
     if node.is_empty() {
         return Err(CliError::Unexpected {
-            message: format!("node with id {}", interval.node_id.unwrap()),
+            message: format!(
+                "node with id {}",
+                interval.node_id.unwrap()
+            ),
         });
     };
 
@@ -72,5 +76,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
 }
 
 pub fn register<'a>(app: App<'a, 'a>) -> App {
-    app.subcommand(SubCommand::with_name("restart").about("Restart last task"))
+    app.subcommand(
+        SubCommand::with_name("restart").about("Restarts last task"),
+    )
 }

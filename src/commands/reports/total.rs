@@ -14,7 +14,10 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
     args: &ArgMatches,
 ) -> CliResult<()> {
     let (start, end) = if let Some(v) = args.values_of("period") {
-        parse_period(&v.collect::<Vec<_>>().join(" "), &PeriodOpts::default())?
+        parse_period(
+            &v.collect::<Vec<_>>().join(" "),
+            &PeriodOpts::default(),
+        )?
     } else {
         (Local::today().and_hms(0, 0, 0).into(), Local::now().into())
     };
@@ -36,7 +39,9 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
             intervals[0].begin = start.to_owned();
         }
         let high = intervals.len() - 1;
-        if intervals[high].end.is_none() || intervals[high].end.unwrap() > end {
+        if intervals[high].end.is_none()
+            || intervals[high].end.unwrap() > end
+        {
             intervals[high].end = Some(end.to_owned());
         }
     }
@@ -93,7 +98,9 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
                 old_path = &node[..];
                 if i == 0 {
                     if round > 1 && !sub_total.is_zero() {
-                        r.push(Row::SubTotal(vec![Cell::Duration(sub_total)]));
+                        r.push(Row::SubTotal(vec![Cell::Duration(
+                            sub_total,
+                        )]));
                     }
                     sub_total = Duration::zero();
                     round = 0;
@@ -137,7 +144,9 @@ fn push_path(
         let wh = Duration::seconds(
             ints.iter()
                 .filter(|v| v.node_id.unwrap() == n.id)
-                .fold(Duration::zero(), |acc, v| acc + (v.end.unwrap() - v.begin))
+                .fold(Duration::zero(), |acc, v| {
+                    acc + (v.end.unwrap() - v.begin)
+                })
                 .num_seconds(),
         );
         *sub_total = *sub_total + wh;

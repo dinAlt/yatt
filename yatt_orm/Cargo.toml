@@ -1,6 +1,6 @@
 [package]
 name = "yatt_orm"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["dinAlt <dinalt2@gmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -10,5 +10,5 @@ repository = "https://github.com/dinAlt/yatt/tree/master/yatt_orm"
 [dependencies]
 chrono = "0.4.7"
 custom_error = "1.7"
-yatt_orm_derive = { version = "0.1.0", path = "yatt_orm_derive" }
+yatt_orm_derive = { version = "0.2.0", path = "yatt_orm_derive" }
 uuid = {version = "0.8", features = ["serde", "v4"]}

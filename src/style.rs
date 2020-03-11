@@ -24,11 +24,32 @@ impl Default for TaskStyle {
     }
 }
 
+pub struct TaskListStyle {
+    pub name: ObjectStyle,
+    pub create_date: ObjectStyle,
+    pub id: ObjectStyle,
+}
+
+impl Default for TaskListStyle {
+    fn default() -> Self {
+        let name = ObjectStyle::default().fg(Color::Yellow);
+        let create_date = ObjectStyle::default().fg(Color::Magenta);
+        let id = ObjectStyle::default().fg(Color::Green);
+
+        TaskListStyle {
+            name,
+            create_date,
+            id,
+        }
+    }
+}
+
 pub struct AppStyle {
     pub task: TaskStyle,
     pub error: ObjectStyle,
     pub cmd: ObjectStyle,
     pub report: MadSkin,
+    pub task_list: TaskListStyle,
     pub screen_width: Option<usize>,
 }
 
@@ -51,6 +72,7 @@ impl Default for AppStyle {
 
         AppStyle {
             task: TaskStyle::default(),
+            task_list: TaskListStyle::default(),
             error: ObjectStyle::default().fg(Color::Red),
             cmd,
             report,

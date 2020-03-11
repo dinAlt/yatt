@@ -18,7 +18,7 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
         .setting(AppSettings::ArgRequiredElseHelp)
         .alias("remove")
         .alias("rm")
-        .about("Delete entity")
+        .about("Deletes an entity")
         .arg(
             Arg::with_name("yes")
                 .short("y")

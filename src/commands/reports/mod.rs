@@ -16,7 +16,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
 pub fn register<'a>(app: App<'a, 'a>) -> App {
     let sub = SubCommand::with_name("report")
         .setting(AppSettings::ArgRequiredElseHelp)
-        .about("Show selected report");
+        .about("Shows selected report");
     let sub = root::register(sub);
     let sub = total::register(sub);
 

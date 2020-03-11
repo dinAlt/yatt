@@ -35,5 +35,8 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
 }
 
 pub fn register<'a>(app: App<'a, 'a>) -> App {
-    app.subcommand(SubCommand::with_name("cancel").about("Cancel current interval."))
+    app.subcommand(
+        SubCommand::with_name("cancel")
+            .about("Cancels current interval."),
+    )
 }

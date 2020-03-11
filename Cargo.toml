@@ -1,6 +1,6 @@
 [package]
 name = "yatt"
-version = "0.2.2"
+version = "0.3.2"
 authors = ["dinAlt <dinalt2@gmail.com>"]
 edition = "2018"
 description = "Yet Another Task Tracker"
@@ -20,8 +20,9 @@ serde_derive = "1.0"
 chrono = "0.4.7"
 crossterm_style = "=0.3.3"
 crossterm_input = "0.3"
-yatt_orm = { version="0.1.0", path = "yatt_orm" }
 uuid = {version = "0.8", features = ["serde", "v4"]}
+trees = "0.3"
+yatt_orm = { version="0.2.0", path = "yatt_orm" }
 
 [dependencies.rusqlite]
 version = "0.20"

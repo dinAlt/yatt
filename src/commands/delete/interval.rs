@@ -9,12 +9,11 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
     args: &ArgMatches,
 ) -> CliResult<()> {
     let no_prompt = args.is_present("yes");
-    let id: i64 = args
-        .value_of("ID")
-        .unwrap()
-        .parse()
-        .map_err(|_| CliError::Parse {
-            message: "Unable to parse interval ID".into(),
+    let id: i64 =
+        args.value_of("ID").unwrap().parse().map_err(|_| {
+            CliError::Parse {
+                message: "Unable to parse interval ID".into(),
+            }
         })?;
 
     let mut interval = if id < 0 {
@@ -29,7 +28,8 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         )?;
         if intervals.len() < offset {
             return Err(CliError::Cmd {
-                message: "There is no interval with given offset".into(),
+                message: "There is no interval with given offset"
+                    .into(),
             });
         }
         intervals.first().unwrap().to_owned()
@@ -38,7 +38,8 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         ctx.db.get_by_id::<Interval>(id).map_err(|source| {
             if let DBError::IsEmpty { .. } = source {
                 return CliError::Cmd {
-                    message: "There is no interval with given ID".into(),
+                    message: "There is no interval with given ID"
+                        .into(),
                 };
             }
 
@@ -73,7 +74,8 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         });
     } else {
         ctx.printer.interval_cmd(&IntervalCmdData {
-            cmd_text: &"Are you sure, you want to delete interval? [y/n]",
+            cmd_text:
+                &"Are you sure, you want to delete interval? [y/n]",
             interval: interval_data,
         });
         let input = input();
@@ -94,7 +96,7 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
     app.subcommand(
         SubCommand::with_name("interval")
             .setting(AppSettings::AllowNegativeNumbers)
-            .about("Deletes interval")
+            .about("Deletes an interval")
             .arg(
                 Arg::with_name("ID")
                     .help("[ID] or -[offset] from NOW (starting with -1)")

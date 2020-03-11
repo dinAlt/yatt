@@ -3,7 +3,6 @@ use super::*;
 use crate::report::*;
 
 const DEFAULT_INTERVAL_INFO_TITLE: &str = "Interval info:";
-
 #[derive(Debug, Clone)]
 pub struct IntervalData<'a> {
     pub interval: &'a Interval,
@@ -42,6 +41,7 @@ pub trait Printer {
     fn cmd(&self, d: &str);
     fn report(&self, r: &Report);
     fn prompt(&self, p: &str);
+    fn task_list(&self, tasks: impl Iterator<Item = Vec<Node>>);
 }
 
 pub trait Markdown {
@@ -88,6 +88,26 @@ impl Printer for TermPrinter {
     fn prompt(&self, p: &str) {
         println!("{}", p);
     }
+    fn task_list(&self, tasks: impl Iterator<Item = Vec<Node>>) {
+        print_task_list(tasks, &self.style.task_list);
+    }
+}
+
+fn print_task_list<'a>(
+    d: impl Iterator<Item = Vec<Node>>,
+    s: &TaskListStyle,
+) {
+    for task in d {
+        let last = task.last().unwrap();
+        print!("[{}] ", s.id.apply_to(last.id));
+        for (i, t) in task.iter().enumerate() {
+            if i > 0 {
+                print!(" > ");
+            }
+            print!("{}", s.name.apply_to(&t.label));
+        }
+        print!(" {} \n", format_datetime(&last.created));
+    }
 }
 
 fn print_interval_info(d: &IntervalData, s: &TaskStyle) {
@@ -108,15 +128,24 @@ fn print_interval_info(d: &IntervalData, s: &TaskStyle) {
     let dur = Utc::now() - d.interval.begin;
 
     if dur.num_seconds() > 2 {
-        print!(" ({} ago)", s.time_span.apply_to(format_duration(&dur)));
+        print!(
+            " ({} ago)",
+            s.time_span.apply_to(format_duration(&dur))
+        );
     }
 
     if d.interval.end.is_some() {
         let e = d.interval.end.unwrap();
-        print!("\n  Stopped: {}", s.end_time.apply_to(format_datetime(&e)));
+        print!(
+            "\n  Stopped: {}",
+            s.end_time.apply_to(format_datetime(&e))
+        );
         let dur = Utc::now() - e;
         if dur.num_seconds() > 2 {
-            print!(" ({} ago)", s.time_span.apply_to(format_duration(&dur)));
+            print!(
+                " ({} ago)",
+                s.time_span.apply_to(format_duration(&dur))
+            );
         }
     }
 

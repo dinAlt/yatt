@@ -114,7 +114,7 @@ impl Markdown for Row {
             Row::Header(v) => format!("Report: **{}**", v),
             Row::Interval(b, e) => {
                 let dtopts = DateTimeOpts {
-                    olways_long: true,
+                    always_long: true,
                     no_string_now: true,
                 };
                 format!(
@@ -152,7 +152,10 @@ fn format_total(cells: &[Cell]) -> String {
     let mut cols = "|Total".to_string();
     for c in cells {
         aligns += match c {
-            Cell::String(_) | Cell::Duration(_) | Cell::DateTime(_) | Cell::Nested(_, _) => "|-",
+            Cell::String(_)
+            | Cell::Duration(_)
+            | Cell::DateTime(_)
+            | Cell::Nested(_, _) => "|-",
             _ => "|-:",
         };
         cols += &format!("|**{}**\n|-", c.markdown());
@@ -175,7 +178,10 @@ fn format_cells(cells: &[Cell]) -> String {
     let mut cols = String::new();
     for c in cells {
         aligns += match c {
-            Cell::String(_) | Cell::Duration(_) | Cell::DateTime(_) | Cell::Nested(_, _) => "|-",
+            Cell::String(_)
+            | Cell::Duration(_)
+            | Cell::DateTime(_)
+            | Cell::Nested(_, _) => "|-",
             _ => "|-:",
         };
         cols += &format!("|{}", c.markdown());

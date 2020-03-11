@@ -22,7 +22,8 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
 
     let path: Vec<&str> = args.values_of("TASK").unwrap().collect();
     let path = path.join(" ");
-    let path: Vec<&str> = path.split("::").map(|t| t.trim()).collect();
+    let path: Vec<&str> =
+        path.split("::").map(|t| t.trim()).collect();
 
     let nodes = ctx.db.create_path(&path)?;
     let interval = Interval {
@@ -51,7 +52,7 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
     app.subcommand(
         SubCommand::with_name("start")
             .alias("run")
-            .about("Start new task, or continues existing")
+            .about("Starts new task, or continues existing")
             .setting(AppSettings::ArgRequiredElseHelp)
             .arg(
                 Arg::with_name("TASK")
