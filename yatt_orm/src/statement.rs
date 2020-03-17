@@ -99,14 +99,3 @@ pub fn or<'a>(f1: Filter<'a>, f2: Filter<'a>) -> Filter<'a> {
 pub fn not(f: Filter) -> Filter {
     Filter::LogOp(Box::new(LogOp::Not(f)))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn it_works() {
-        let s = String::from("a");
-        let g = gt(s, 8);
-        assert_eq!(2 + 2, 4);
-    }
-}
