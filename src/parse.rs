@@ -229,87 +229,100 @@ fn try_parse_period(
     };
     let now = Local::now();
     let (begin, end) = match p {
-        "y" => (
-            Local
-                .ymd(
-                    now.year()
-                        - i32::try_from(o + n - 1).map_err(|_| CliError::Parse {
-                            message: format!(r#"can't parse last from string "{}""#, s),
-                        })?,
-                    1,
-                    1,
-                )
-                .and_hms(0, 0, 0),
-            if o == 1 {
-                Local.ymd(now.year(), 1, 1).and_hms(0, 0, 0)
-            } else {
-                now
-            },
-        ),
-        "m" => {
-            let mo = o + n - 1;
-            let mut yo = mo / 12;
-            let mut mo = mo - yo * 12;
-            let mut month = if mo > now.month() {
-                yo += 1;
-                mo -= now.month();
-                12 - mo
-            } else {
-                now.month() - mo
-            };
-            let mut year = now.year()
-                - i32::try_from(yo).map_err(|_| CliError::Parse {
-                    message: format!(r#"can't parse last from string "{}""#, s),
-                })?;
-            if month == 0 {
-                month = 12;
-                year -= 1;
-            };
-            (
-                Local.ymd(year, month, 1).and_hms(0, 0, 0),
-                if o == 1 {
-                    Local.ymd(now.year(), now.month(), 1).and_hms(0, 0, 0)
-                } else {
-                    now
-                },
-            )
-        }
-        "w" => {
-            let first_dow = (if opts.week_starts_from_sunday {
-                now - Duration::days(now.weekday().number_from_sunday().try_into().unwrap())
-            } else {
-                now - Duration::days(now.weekday().number_from_monday().try_into().unwrap())
-            })
-            .date()
-                + Duration::days(1);
-            let wo = o + n - 1;
-            (
-                (first_dow - Duration::weeks(wo.try_into().unwrap())).and_hms(0, 0, 0),
-                if o == 1 {
-                    first_dow.and_hms(0, 0, 0)
-                } else {
-                    now
-                },
-            )
-        }
-        "d" => {
-            let today = Local::today();
-            let dayo = o + n - 1;
-            (
-                (today - Duration::days(dayo.try_into().unwrap())).and_hms(0, 0, 0),
-                if o == 1 { today.and_hms(0, 0, 0) } else { now },
-            )
-        }
-        "h" => {
-            let hour = Local::today().and_hms(now.hour(), 0, 0);
-            let ho = o + n - 1;
-            (
-                (hour - Duration::hours(ho.try_into().unwrap())),
-                if o == 1 { hour } else { now },
-            )
-        }
-        _ => unreachable!(),
-    };
+    "y" => (
+      Local
+        .ymd(
+          now.year()
+            - i32::try_from(o + n - 1).map_err(|_| {
+              CliError::Parse {
+                message: format!(
+                  r#"can't parse last from string "{}""#,
+                  s
+                ),
+              }
+            })?,
+          1,
+          1,
+        )
+        .and_hms(0, 0, 0),
+      if o == 1 {
+        Local.ymd(now.year(), 1, 1).and_hms(0, 0, 0)
+      } else {
+        now
+      },
+    ),
+    "m" => {
+      let mo = o + n - 1;
+      let mut yo = mo / 12;
+      let mut mo = mo - yo * 12;
+      let mut month = if mo > now.month() {
+        yo += 1;
+        mo -= now.month();
+        12 - mo
+      } else {
+        now.month() - mo
+      };
+      let mut year = now.year()
+        - i32::try_from(yo).map_err(|_| CliError::Parse {
+          message: format!(r#"can't parse last from string "{}""#, s),
+        })?;
+      if month == 0 {
+        month = 12;
+        year -= 1;
+      };
+      (
+        Local.ymd(year, month, 1).and_hms(0, 0, 0),
+        if o == 1 {
+          Local.ymd(now.year(), now.month(), 1).and_hms(0, 0, 0)
+        } else {
+          now
+        },
+      )
+    }
+    "w" => {
+      let first_dow = (if opts.week_starts_from_sunday {
+        now
+          - Duration::days(
+            now.weekday().number_from_sunday().try_into().unwrap(),
+          )
+      } else {
+        now
+          - Duration::days(
+            now.weekday().number_from_monday().try_into().unwrap(),
+          )
+      })
+      .date()
+        + Duration::days(1);
+      let wo = o + n - 1;
+      (
+        (first_dow - Duration::weeks(wo.try_into().unwrap()))
+          .and_hms(0, 0, 0),
+        if o == 1 {
+          first_dow.and_hms(0, 0, 0)
+        } else {
+          now
+        },
+      )
+    }
+    "d" => {
+      let today = Local::today();
+      let dayo = o + n - 1;
+      (
+        (today - Duration::days(dayo.try_into().unwrap()))
+          .and_hms(0, 0, 0),
+        if o == 1 { today.and_hms(0, 0, 0) } else { now },
+      )
+    }
+    "h" => {
+      let hour = Local::today().and_hms(now.hour(), 0, 0);
+      let ho = o + n - 1;
+      (
+        (hour - Duration::hours(ho.try_into().unwrap())),
+        if o == 1 { hour } else { now },
+      )
+    }
+    _ => unreachable!(),
+  };
 
     Ok((begin.into(), end.into()))
 }
