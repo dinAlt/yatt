@@ -11,7 +11,10 @@ pub struct PeriodOpts {
     pub week_starts_from_sunday: bool,
 }
 
-pub fn parse_period(s: &str, opts: &PeriodOpts) -> CliResult<(DateTime<Utc>, DateTime<Utc>)> {
+pub fn parse_period(
+    s: &str,
+    opts: &PeriodOpts,
+) -> CliResult<(DateTime<Utc>, DateTime<Utc>)> {
     let parts: Vec<&str> = s.split("::").collect();
 
     match parts.len() {
@@ -30,7 +33,10 @@ pub fn parse_period(s: &str, opts: &PeriodOpts) -> CliResult<(DateTime<Utc>, Dat
             Ok((try_parse_date_time(parts[0])?, end))
         }
         _ => Err(CliError::Parse {
-            message: format!(r#"can't parse period from string "{}"#, s),
+            message: format!(
+                r#"can't parse period from string "{}"#,
+                s
+            ),
         }),
     }
 }
@@ -50,7 +56,10 @@ fn try_parse_date_time(s: &str) -> CliResult<DateTime<Utc>> {
             try_parse_time_part(parts[1], d)
         }
         _ => Err(CliError::Parse {
-            message: format!(r#"can't parse date and time from string "{}""#, s),
+            message: format!(
+                r#"can't parse date and time from string "{}""#,
+                s
+            ),
         }),
     }
 }
@@ -66,7 +75,10 @@ fn try_parse_date_part(s: &str) -> CliResult<Date<Local>> {
     let caps = RE_PARSE_DATE_PART.captures(s);
     if caps.is_none() {
         return Err(CliError::Parse {
-            message: format!(r#"can't parse date from string "{}""#, s),
+            message: format!(
+                r#"can't parse date from string "{}""#,
+                s
+            ),
         });
     }
 
@@ -78,7 +90,10 @@ fn try_parse_date_part(s: &str) -> CliResult<Date<Local>> {
         .as_str()
         .parse()
         .map_err(|_| CliError::Parse {
-            message: format!(r#"can't parse date from string "{}""#, s),
+            message: format!(
+                r#"can't parse date from string "{}""#,
+                s
+            ),
         })?;
     let month: u32 = caps
         .name("m")
@@ -86,15 +101,24 @@ fn try_parse_date_part(s: &str) -> CliResult<Date<Local>> {
         .as_str()
         .parse()
         .map_err(|_| CliError::Parse {
-            message: format!(r#"can't parse date from string "{}""#, s),
+            message: format!(
+                r#"can't parse date from string "{}""#,
+                s
+            ),
         })?;
     let year: i32 = if let Some(y) = caps.name("y") {
         y.as_str().parse().map_err(|_| CliError::Parse {
-            message: format!(r#"can't parse date from string "{}""#, s),
+            message: format!(
+                r#"can't parse date from string "{}""#,
+                s
+            ),
         })?
     } else if let Some(y) = caps.name("yr") {
         y.as_str().parse().map_err(|_| CliError::Parse {
-            message: format!(r#"can't parse date from string "{}""#, s),
+            message: format!(
+                r#"can't parse date from string "{}""#,
+                s
+            ),
         })?
     } else {
         Local::today().year()
@@ -102,31 +126,50 @@ fn try_parse_date_part(s: &str) -> CliResult<Date<Local>> {
     Ok(Local.ymd(year, month, day))
 }
 
-fn try_parse_time_part(s: &str, d: Date<Local>) -> CliResult<DateTime<Utc>> {
+fn try_parse_time_part(
+    s: &str,
+    d: Date<Local>,
+) -> CliResult<DateTime<Utc>> {
     lazy_static! {
-        static ref RE_PARSE_TIME_PART: Regex =
-            Regex::new(r"^(?P<h>\d{1,2}):(?P<m>\d{1,2})(:(?P<s>\d{1,2}))?$").unwrap();
+        static ref RE_PARSE_TIME_PART: Regex = Regex::new(
+            r"^(?P<h>\d{1,2}):(?P<m>\d{1,2})(:(?P<s>\d{1,2}))?$"
+        )
+        .unwrap();
     }
 
     let caps = RE_PARSE_TIME_PART.captures(s);
 
     if caps.is_none() {
         return Err(CliError::Parse {
-            message: format!(r#"can't parse time from string "{}""#, s),
+            message: format!(
+                r#"can't parse time from string "{}""#,
+                s
+            ),
         });
     }
 
     let caps = caps.unwrap();
 
-    let hour: u32 = caps["h"].parse().map_err(|_| CliError::Parse {
-        message: format!(r#"can't parse time from string "{}""#, s),
-    })?;
-    let minute: u32 = caps["m"].parse().map_err(|_| CliError::Parse {
-        message: format!(r#"can't parse time from string "{}""#, s),
-    })?;
+    let hour: u32 =
+        caps["h"].parse().map_err(|_| CliError::Parse {
+            message: format!(
+                r#"can't parse time from string "{}""#,
+                s
+            ),
+        })?;
+    let minute: u32 =
+        caps["m"].parse().map_err(|_| CliError::Parse {
+            message: format!(
+                r#"can't parse time from string "{}""#,
+                s
+            ),
+        })?;
     let second: u32 = if let Some(sec) = caps.name("s") {
         sec.as_str().parse().map_err(|_| CliError::Parse {
-            message: format!(r#"can't parse time from string "{}""#, s),
+            message: format!(
+                r#"can't parse time from string "{}""#,
+                s
+            ),
         })?
     } else {
         0
@@ -135,22 +178,32 @@ fn try_parse_time_part(s: &str, d: Date<Local>) -> CliResult<DateTime<Utc>> {
     Ok(d.and_hms(hour, minute, second).into())
 }
 
-fn try_parse_period(s: &str, opts: &PeriodOpts) -> CliResult<(DateTime<Utc>, DateTime<Utc>)> {
+fn try_parse_period(
+    s: &str,
+    opts: &PeriodOpts,
+) -> CliResult<(DateTime<Utc>, DateTime<Utc>)> {
     if s.starts_with('l') && s.len() < 2 {
         return Err(CliError::Parse {
-            message: format!(r#"can't parse last from string "{}""#, s),
+            message: format!(
+                r#"can't parse last from string "{}""#,
+                s
+            ),
         });
     }
 
     lazy_static! {
         static ref RE_PARSE_DURATION: Regex =
-            Regex::new(r"^(?P<o>[lp])?(?P<n>\d+)?(?P<p>[ymwdh])$").unwrap();
+            Regex::new(r"^(?P<o>[lp])?(?P<n>\d+)?(?P<p>[ymwdh])$")
+                .unwrap();
     }
 
     let caps = RE_PARSE_DURATION.captures(s);
     if caps.is_none() {
         return Err(CliError::Parse {
-            message: format!(r#"can't parse last from string "{}""#, s),
+            message: format!(
+                r#"can't parse last from string "{}""#,
+                s
+            ),
         });
     }
     let caps = caps.unwrap();
@@ -166,7 +219,10 @@ fn try_parse_period(s: &str, opts: &PeriodOpts) -> CliResult<(DateTime<Utc>, Dat
     let p = &caps["p"];
     let n: u32 = if let Some(n) = caps.name("n") {
         n.as_str().parse().map_err(|_| CliError::Parse {
-            message: format!(r#"can't parse last from string "{}""#, s),
+            message: format!(
+                r#"can't parse last from string "{}""#,
+                s
+            ),
         })?
     } else {
         1
@@ -256,11 +312,4 @@ fn try_parse_period(s: &str, opts: &PeriodOpts) -> CliResult<(DateTime<Utc>, Dat
     };
 
     Ok((begin.into(), end.into()))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn it_works() {}
 }
