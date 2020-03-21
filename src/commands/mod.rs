@@ -10,6 +10,7 @@ mod root;
 mod start;
 mod state;
 mod stop;
+mod truncate;
 
 pub fn exec<T: DBRoot, P: Printer>(
   ctx: &AppContext<T, P>,
@@ -24,6 +25,7 @@ pub fn exec<T: DBRoot, P: Printer>(
     ("delete", Some(m)) => delete::exec(ctx, m),
     ("list", Some(m)) => list::exec(ctx, m),
     ("add", Some(m)) => add::exec(ctx, m),
+    ("trunc", Some(m)) => truncate::exec(ctx, m),
     _ => root::exec(ctx, &ctx.args),
   }
 }
@@ -38,6 +40,7 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
   let app = reports::register(app);
   let app = list::register(app);
   let app = add::register(app);
+  let app = truncate::register(app);
 
   delete::register(app)
 }

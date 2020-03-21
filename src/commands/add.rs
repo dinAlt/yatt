@@ -159,8 +159,8 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
   app.subcommand(
     SubCommand::with_name("add")
       .about(
-        "Adds time to or creates new interval.\n\
-                By default, gets task from last running interval.",
+        "Adds time to or creates new interval\n\
+                By default, gets task from last running interval",
       )
       .setting(AppSettings::ArgRequiredElseHelp)
       .arg(
