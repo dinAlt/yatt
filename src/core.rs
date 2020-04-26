@@ -1,3 +1,4 @@
+use std::cmp::*;
 use std::convert::TryFrom;
 
 use chrono::prelude::*;
@@ -404,7 +405,7 @@ impl<'a, T: Clone> Iterator for FlattenForestIter<'a, T> {
   }
 }
 
-#[derive(Debug, Clone, Identifiers, PartialEq)]
+#[derive(Debug, Clone, Identifiers, PartialEq, Eq, Ord)]
 pub struct Node {
   pub id: usize,
   pub parent_id: Option<usize>,
@@ -412,6 +413,12 @@ pub struct Node {
   pub created: DateTime<Utc>,
   pub closed: bool,
   pub deleted: bool,
+}
+
+impl PartialOrd for Node {
+  fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+    Some(self.label.cmp(&other.label))
+  }
 }
 
 impl Default for Node {
