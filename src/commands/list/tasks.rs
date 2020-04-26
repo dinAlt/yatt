@@ -25,6 +25,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         r
       })
       .collect::<Vec<_>>();
+    v.sort();
     v.dedup();
     ctx.printer.task_list(v.into_iter());
   } else {
