@@ -77,7 +77,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
       interval: interval_data,
     });
     let input = input();
-    if input.read_line()?.trim().to_lowercase() == "y" {
+    if input.read_char()?.to_lowercase().to_string() == "y" {
       ctx
         .db
         .save(&interval)
