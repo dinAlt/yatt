@@ -2,6 +2,7 @@ use crate::*;
 
 mod interval;
 mod root;
+mod task;
 
 pub(crate) fn exec<T: DBRoot, P: Printer>(
   ctx: &AppContext<T, P>,
@@ -9,6 +10,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
 ) -> CliResult<()> {
   match args.subcommand() {
     ("interval", Some(m)) => interval::exec(ctx, m),
+    ("task", Some(m)) => task::exec(ctx, m),
     _ => root::exec(ctx, args),
   }
 }
@@ -26,6 +28,7 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
     );
   let sub = root::register(sub);
   let sub = interval::register(sub);
+  let sub = task::register(sub);
 
   app.subcommand(sub)
 }

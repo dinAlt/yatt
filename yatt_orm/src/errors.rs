@@ -11,7 +11,7 @@ custom_error! {pub DBError
 }
 
 impl DBError {
-    pub fn wrap(e: Box<dyn Error>) -> DBError {
-        DBError::Wrapped { source: e }
-    }
+  pub fn wrap(e: Box<dyn Error>) -> DBError {
+    DBError::Wrapped { source: e }
+  }
 }
