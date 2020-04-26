@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 
 use chrono::prelude::*;
+use std::error::Error;
 use trees::{tr, Forest, ForestWalk, Visit};
 use yatt_orm::errors::{DBError, DBResult};
 use yatt_orm::statement::*;
@@ -8,6 +9,20 @@ use yatt_orm::FieldVal;
 use yatt_orm::{Identifiers, Storage};
 
 type PinNode<'a> = std::pin::Pin<&'a mut trees::Node<Node>>;
+
+#[derive(Debug)]
+pub(crate) struct ImportedPath {
+  nodes: Vec<Node>,
+  source: String,
+  comment: String,
+}
+
+pub(crate) trait PathSource {
+  fn get_path(
+    &self,
+    source: &str,
+  ) -> Result<ImportedPath, Box<dyn Error>>;
+}
 
 pub trait DBRoot: Storage {
   fn cur_running(&self) -> DBResult<Option<(Node, Interval)>>
