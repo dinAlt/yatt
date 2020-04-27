@@ -31,7 +31,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         message: "There is no interval with given offset".into(),
       });
     }
-    intervals.first().unwrap().to_owned()
+    intervals.last().unwrap().to_owned()
   } else {
     let id: usize = id.try_into().unwrap();
     ctx.db.get_by_id::<Interval>(id).map_err(|source| {
