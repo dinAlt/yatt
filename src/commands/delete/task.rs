@@ -48,12 +48,12 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   };
 
   let cmd_text = if is_group {
+    "Selected task has children. \
+      Are you sure, you want to delete it \
+      with all it's children and intervals? [y/n]"
+  } else {
     "Are you sure, you want to delete \
       task and all it's intervals? [y/n]"
-  } else {
-    "Selected task has children.\n\
-      Are you sure, you want to delete it\
-      with all it's children and intervals? [y/n]"
   };
 
   if !no_prompt {
