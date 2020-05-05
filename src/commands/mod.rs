@@ -4,6 +4,7 @@ mod add;
 mod cancel;
 mod delete;
 mod list;
+mod merge;
 mod r#move;
 mod rename;
 mod reports;
@@ -30,6 +31,7 @@ pub fn exec<T: DBRoot, P: Printer>(
     ("trunc", Some(m)) => truncate::exec(ctx, m),
     ("rename", Some(m)) => rename::exec(ctx, m),
     ("move", Some(m)) => r#move::exec(ctx, m),
+    ("merge", Some(m)) => merge::exec(ctx, m),
     _ => root::exec(ctx, &ctx.args),
   }
 }
@@ -47,6 +49,7 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
   let app = truncate::register(app);
   let app = rename::register(app);
   let app = r#move::register(app);
+  let app = merge::register(app);
 
   delete::register(app)
 }
