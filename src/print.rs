@@ -63,6 +63,7 @@ pub trait Printer {
   fn report(&self, r: &Report);
   fn prompt(&self, p: &str);
   fn task_list(&self, tasks: impl Iterator<Item = Vec<Node>>);
+  fn interval_list(&self, intervals: impl Iterator<Item = Interval>);
 }
 
 pub trait Markdown {
@@ -118,6 +119,9 @@ impl Printer for TermPrinter {
   fn task_list(&self, tasks: impl Iterator<Item = Vec<Node>>) {
     print_task_list(tasks, &self.style.task_list);
   }
+  fn interval_list(&self, intervals: impl Iterator<Item = Interval>) {
+    print_intervals_list(intervals, &self.style.task_list);
+  }
 }
 
 fn print_task_list<'a>(
@@ -134,6 +138,23 @@ fn print_task_list<'a>(
       print!("{}", s.name.apply_to(&t.label));
     }
     print!(" {} \n", format_datetime(&last.created));
+  }
+}
+
+fn print_intervals_list<'a>(
+  d: impl Iterator<Item = Interval>,
+  s: &TaskListStyle,
+) {
+  for i in d {
+    if i.end.is_some() {
+      print!(
+        "[{}] {} - {} [{}]\n",
+        s.id.apply_to(i.id),
+        s.name.apply_to(format_datetime(&i.begin)),
+        s.name.apply_to(format_datetime(&i.end.unwrap())),
+        s.name.apply_to(i.node_id.unwrap()),
+      );
+    }
   }
 }
 
