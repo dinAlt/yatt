@@ -6,6 +6,7 @@ edition = "2018"
 description = "Yet Another Task Tracker"
 license = "MIT"
 repository = "https://github.com/dinAlt/yatt"
+categories = ["command-line-utilities"]
 
 [dependencies]
 clap = "2.33"
