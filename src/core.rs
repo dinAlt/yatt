@@ -123,6 +123,11 @@ pub trait DBRoot: Storage {
     let n_len = nodes.len();
     let high = p_len - (p_len - n_len);
 
+    for node in nodes.iter_mut().filter(|n| n.deleted) {
+      node.deleted = false;
+      self.save(node)?;
+    }
+
     if high == p_len {
       return Ok(nodes);
     }
