@@ -2,6 +2,7 @@ use crossterm_style::{Color, ObjectStyle};
 use std::convert::TryInto;
 use termimad::*;
 
+#[derive(Clone)]
 pub struct TaskStyle {
   pub name: ObjectStyle,
   pub start_time: ObjectStyle,
@@ -28,6 +29,20 @@ impl Default for TaskStyle {
   }
 }
 
+impl TaskStyle {
+  pub(crate) fn empty() -> Self {
+    let style = ObjectStyle::default();
+
+    TaskStyle {
+      name: style.clone(),
+      start_time: style.clone(),
+      end_time: style.clone(),
+      created_time: style.clone(),
+      time_span: style,
+    }
+  }
+}
+
 pub struct TaskListStyle {
   pub name: ObjectStyle,
   pub create_date: ObjectStyle,
@@ -44,6 +59,18 @@ impl Default for TaskListStyle {
       name,
       create_date,
       id,
+    }
+  }
+}
+
+impl TaskListStyle {
+  pub(crate) fn empty() -> Self {
+    let style = ObjectStyle::default();
+
+    TaskListStyle {
+      name: style.clone(),
+      create_date: style.clone(),
+      id: style,
     }
   }
 }
@@ -81,6 +108,43 @@ impl Default for AppStyle {
       cmd,
       report,
       screen_width: area,
+    }
+  }
+}
+
+impl AppStyle {
+  pub(crate) fn empty() -> Self {
+    let report = MadSkin {
+      paragraph: Default::default(),
+      bold: Default::default(),
+      italic: Default::default(),
+      strikeout: Default::default(),
+      inline_code: Default::default(),
+      code_block: Default::default(),
+      headers: Default::default(),
+      scrollbar: ScrollBarStyle {
+        track: StyledChar::new(Default::default(), ' '),
+        thumb: StyledChar::new(Default::default(), ' '),
+      },
+      table: LineStyle {
+        compound_style: Default::default(),
+        align: Alignment::Unspecified,
+      },
+      bullet: StyledChar::new(Default::default(), '.'),
+      quote_mark: StyledChar::new(
+        CompoundStyle::new(None, None, vec![]),
+        '|',
+      ),
+      horizontal_rule: StyledChar::new(Default::default(), '―'),
+    };
+
+    AppStyle {
+      task: TaskStyle::empty(),
+      task_list: TaskListStyle::empty(),
+      error: Default::default(),
+      cmd: Default::default(),
+      report,
+      screen_width: Some(4000),
     }
   }
 }

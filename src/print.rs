@@ -124,6 +124,14 @@ impl Printer for TermPrinter {
   }
 }
 
+impl TermPrinter {
+  pub(crate) fn unstyled() -> Self {
+    TermPrinter {
+      style: AppStyle::empty(),
+    }
+  }
+}
+
 fn print_task_list<'a>(
   d: impl Iterator<Item = Vec<Node>>,
   s: &TaskListStyle,

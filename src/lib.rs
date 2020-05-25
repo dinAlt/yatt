@@ -11,9 +11,7 @@ use chrono::prelude::*;
 use clap;
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use config::{Config, File};
-use crossterm_style::Color::*;
 use dirs;
-use termimad::*;
 
 mod commands;
 mod core;
@@ -86,6 +84,11 @@ fn make_args<'a>(info: &CrateInfo<'a>) -> ArgMatches<'a> {
     .version(info.version)
     .author(info.authors)
     .about(info.description)
+    .arg(
+      Arg::with_name("no-color")
+        .help("Unstyled output")
+        .short("c"),
+    )
     .setting(AppSettings::ArgRequiredElseHelp);
 
   commands::register(app).get_matches()
@@ -146,16 +149,14 @@ fn run_app<T: DBRoot>(
   info: &CrateInfo,
   conf: AppConfig,
 ) -> CliResult<()> {
-  let mut skin = MadSkin::default();
-  skin.set_headers_fg(rgb(255, 187, 0));
-  skin.bold.set_fg(Yellow);
-  skin.italic.set_fgbg(Magenta, rgb(30, 30, 40));
-  skin.bullet = StyledChar::from_fg_char(Yellow, '⟡');
-  skin.quote_mark.set_fg(Yellow);
-
-  let printer = TermPrinter::default();
+  let args = make_args(info);
+  let printer = if args.is_present("no-color") {
+    TermPrinter::unstyled()
+  } else {
+    TermPrinter::default()
+  };
   let app = AppContext {
-    args: make_args(info),
+    args,
     conf,
     root: base_path,
     printer,
