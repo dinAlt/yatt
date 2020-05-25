@@ -23,9 +23,9 @@ custom_error! {pub CliError
 }
 
 impl CliError {
-    pub fn wrap(e: Box<dyn Error>) -> CliError {
-        CliError::Wrapped { source: e }
-    }
+  pub fn wrap(e: Box<dyn Error>) -> CliError {
+    CliError::Wrapped { source: e }
+  }
 }
 
 custom_error! {pub TaskError
