@@ -26,7 +26,7 @@ trees = "0.3"
 yatt_orm = { version="0.3", path = "yatt_orm" }
 
 [dependencies.rusqlite]
-version = "0.20"
+version = "0.23"
 default-features = false
 
 features = ["chrono", "bundled"]
