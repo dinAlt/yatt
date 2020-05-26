@@ -18,7 +18,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
 pub fn register<'a>(app: App<'a, 'a>) -> App {
   let sub = SubCommand::with_name("list")
     .setting(AppSettings::ArgRequiredElseHelp)
-    .about("List entities");
+    .about("List records");
   let sub = tasks::register(sub);
   let sub = intervals::register(sub);
 
