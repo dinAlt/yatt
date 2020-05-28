@@ -2,7 +2,7 @@
 export yatt_script_executable=$0
 export yatt_script_usage_prefix="Deletes yatt's record"
 
-id_cmd=$(echo $0 | sed "s/yatt-del$/yatt-id/")
+id_cmd=$(echo $0 | sed "s/yatt-remove$/yatt-id/")
 id=$($id_cmd $1)
 
 echo "$id" | grep -C 100 "$yatt_script_usage_prefix" && exit 0
