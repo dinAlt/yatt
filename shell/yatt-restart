@@ -1,0 +1,21 @@
+#!/bin/sh
+id_cmd=$(echo $0 | sed "s/yatt-restart$/yatt-id/")
+
+usage () {
+  echo "\
+Restarts yatt's selected task.
+By default, 'fzf' is used, but you can change it by setting \
+YATT_FZF environment variable value.
+
+USAGE:
+	$0
+
+This command doesn't takes any args."
+	exit 0
+}
+[ "$1" == "" ] || usage
+id=$($id_cmd task)
+
+[ "$id" == "" ] && exit 0
+
+yatt restart $id
