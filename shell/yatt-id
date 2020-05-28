@@ -34,4 +34,4 @@ echo $1 | grep -E '^task|interval|group$' > /dev/null || error
 
 command=$(echo $1s | sed 's/groups/tasks -g/')
 
-yatt -c list $command | $YATT_FZF | grep -o -E '^\[[[:digit:]]+' | grep -o -E '[[:digit:]]+' --color=never
+yatt -c list $command | $YATT_FZF | grep -o -E '^\[[[:digit:]]+' | grep --color=never -o -E '[[:digit:]]+'
