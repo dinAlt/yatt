@@ -1,5 +1,5 @@
 #!/bin/sh
-id_cmd=$(echo $0 | sed "s/yatt-restart$/yatt-id/")
+id_cmd=${0%yatt-restart}yatt-id
 
 usage () {
   echo "\
@@ -13,9 +13,11 @@ USAGE:
 This command doesn't takes any args."
 	exit 0
 }
-[ "$1" == "" ] || usage
+
+[ -z "$1" ] || usage
+
 id=$($id_cmd task)
 
-[ "$id" == "" ] && exit 0
+[ -z "$id" ] && exit 0
 
 yatt restart $id

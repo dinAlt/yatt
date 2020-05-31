@@ -2,12 +2,13 @@
 export yatt_script_executable=$0
 export yatt_script_usage_prefix="Deletes yatt's record"
 
-id_cmd=$(echo $0 | sed "s/yatt-remove$/yatt-id/")
+id_cmd=${0%yatt-remove}yatt-id
 id=$($id_cmd $1)
 
 echo "$id" | grep -C 100 "$yatt_script_usage_prefix" && exit 0
-[ "$id" == "" ] && exit 0
 
-entity=$(echo $1 | sed "s/group/task/")
+[ -z "$id" ] && exit 0
+
+entity=${1/group/task}
 
 yatt delete -y $entity $id
