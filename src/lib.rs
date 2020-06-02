@@ -29,7 +29,7 @@ pub(crate) use format::*;
 use history::DBWatcher;
 pub use print::*;
 pub(crate) use style::*;
-use yatt_orm::sqlite::DB;
+use yatt_orm::sqlite::{DB, NO_PARAMS};
 
 pub struct CrateInfo<'a> {
   pub name: &'a str,
@@ -122,7 +122,32 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
   #[cfg(debug_assertions)]
   debug_config(&mut conf);
 
-  let db = match DB::new(base_path.join(&conf.db_path)) {
+  let db = match DB::new(base_path.join(&conf.db_path), |con| {
+    con.execute(
+      "create table nodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            label TEXT NOT NULL,
+            parent_id INTEGER,
+            created INTEGER NOT NULL,
+            closed INTEGER DEFAULT 0,
+            deleted integer default 0
+            )",
+      NO_PARAMS,
+    )?;
+    con.execute(
+      "create table intervals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            node_id integer,
+             begin integer NOT NULL,
+             end integer,
+             deleted integer default 0,
+             closed integer default 0
+             )",
+      NO_PARAMS,
+    )?;
+
+    Ok(())
+  }) {
     Ok(db) => db,
     Err(e) => return Err(CliError::DB { source: e }),
   };

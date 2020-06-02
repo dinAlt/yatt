@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 use std::path::Path;
 use std::rc::Rc;
 
-use rusqlite::{
+pub use rusqlite::{
   types::ValueRef, Connection, Result as SQLITEResult, ToSql,
   NO_PARAMS,
 };
@@ -17,42 +17,19 @@ pub struct DB {
 }
 
 impl DB {
-  pub fn new<P: AsRef<Path>>(path: P) -> DBResult<DB> {
+  pub fn new<P, F>(path: P, init: F) -> DBResult<DB>
+  where
+    P: AsRef<Path>,
+    F: FnOnce(&Connection) -> SQLITEResult<()>,
+  {
     let exists = path.as_ref().exists();
     let con = Connection::open(path)
       .map_err(|s| DBError::wrap(Box::new(s)))?;
-    let res = DB { con: Rc::new(con) };
     if !exists {
-      res.init().map_err(|s| DBError::wrap(Box::new(s)))?;
+      init(&con).map_err(|s| DBError::wrap(Box::new(s)))?;
     }
+    let res = DB { con: Rc::new(con) };
     Ok(res)
-  }
-
-  fn init(&self) -> SQLITEResult<()> {
-    self.con.execute(
-      "create table nodes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            label TEXT NOT NULL,
-            parent_id INTEGER,
-            created INTEGER NOT NULL,
-            closed INTEGER DEFAULT 0,
-            deleted integer default 0
-            )",
-      NO_PARAMS,
-    )?;
-    self.con.execute(
-      "create table intervals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            node_id integer,
-             begin integer NOT NULL,
-             end integer,
-             deleted integer default 0,
-             closed integer default 0
-             )",
-      NO_PARAMS,
-    )?;
-
-    Ok(())
   }
 
   fn query_rows<T: StoreObject>(&self, q: &str) -> DBResult<Vec<T>> {
