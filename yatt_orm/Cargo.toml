@@ -12,3 +12,8 @@ chrono = "0.4.7"
 custom_error = "1.7"
 yatt_orm_derive = { version = "0.2.1", path = "yatt_orm_derive" }
 uuid = {version = "0.8", features = ["serde", "v4"]}
+
+[dependencies.rusqlite]
+version = "0.23"
+default-features = false
+features = ["chrono", "bundled"]

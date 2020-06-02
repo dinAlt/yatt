@@ -1,4 +1,5 @@
 pub mod errors;
+pub mod sqlite;
 pub mod statement;
 
 use chrono::prelude::*;

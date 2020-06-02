@@ -7,10 +7,9 @@ use rusqlite::{
   NO_PARAMS,
 };
 
-use crate::core::DBRoot;
-use yatt_orm::errors::*;
-use yatt_orm::statement::*;
-use yatt_orm::*;
+use crate::errors::*;
+use crate::statement::*;
+use crate::*;
 
 #[derive(Debug)]
 pub struct DB {
@@ -217,8 +216,6 @@ impl Storage for DB {
     self.query_rows(&q)
   }
 }
-
-impl DBRoot for DB {}
 
 trait BuildSelect {
   fn build_select(&self) -> String;

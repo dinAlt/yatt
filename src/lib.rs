@@ -22,15 +22,14 @@ mod history_storage;
 mod parse;
 mod print;
 mod report;
-mod storage;
 mod style;
 
 use errors::*;
 pub(crate) use format::*;
 use history::DBWatcher;
 pub use print::*;
-use storage::sqlite::DB;
 pub(crate) use style::*;
+use yatt_orm::sqlite::DB;
 
 pub struct CrateInfo<'a> {
   pub name: &'a str,

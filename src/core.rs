@@ -5,6 +5,7 @@ use chrono::prelude::*;
 use std::error::Error;
 use trees::{tr, Forest, ForestWalk, Visit};
 use yatt_orm::errors::{DBError, DBResult};
+use yatt_orm::sqlite::DB;
 use yatt_orm::statement::*;
 use yatt_orm::FieldVal;
 use yatt_orm::{Identifiers, Storage};
@@ -475,3 +476,5 @@ impl ToString for Interval {
     format!("[started: {} stopped: {}]", self.begin, end)
   }
 }
+
+impl DBRoot for DB {}

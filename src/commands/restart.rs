@@ -23,13 +23,11 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   };
 
   let node_id = if args.is_present("ID") {
-    args
-      .value_of("ID")
-      .unwrap()
-      .parse()
-      .map_err(|_| CliError::Parse {
+    args.value_of("ID").unwrap().parse().map_err(|_| {
+      CliError::Parse {
         message: "Unable to parse task ID".into(),
-      })?
+      }
+    })?
   } else {
     let interval: Vec<Interval> = ctx.db.get_by_statement(
       filter(and(
