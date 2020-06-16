@@ -1,10 +1,9 @@
 use std::convert::TryFrom;
 use std::path::Path;
-use std::rc::Rc;
 
 pub use rusqlite::{
-  types::ValueRef, Connection, Result as SQLITEResult, ToSql,
-  NO_PARAMS,
+  types::ValueRef, Connection, Result as SQLITEResult,
+  Statement as SQLITEStatement, ToSql, Transaction, NO_PARAMS,
 };
 
 use crate::errors::*;
@@ -12,12 +11,57 @@ use crate::statement::*;
 use crate::*;
 
 #[derive(Debug)]
-pub struct DB {
-  con: Rc<Connection>,
+enum DBRunner<'a> {
+  Connection(Connection),
+  Transaction(Transaction<'a>),
 }
 
-impl DB {
-  pub fn new<P, F>(path: P, init: F) -> DBResult<DB>
+impl DBRunner<'_> {
+  fn prepare(&self, sql: &str) -> SQLITEResult<SQLITEStatement<'_>> {
+    match self {
+      DBRunner::Connection(c) => c.prepare(sql),
+      DBRunner::Transaction(t) => t.prepare(sql),
+    }
+  }
+  fn execute<P>(&self, sql: &str, params: P) -> SQLITEResult<usize>
+  where
+    P: IntoIterator,
+    P::Item: ToSql,
+  {
+    match self {
+      DBRunner::Connection(c) => c.execute(sql, params),
+      DBRunner::Transaction(t) => t.execute(sql, params),
+    }
+  }
+  fn last_insert_rowid(&self) -> i64 {
+    match self {
+      DBRunner::Connection(c) => c.last_insert_rowid(),
+      DBRunner::Transaction(t) => t.last_insert_rowid(),
+    }
+  }
+  fn transaction(&mut self) -> SQLITEResult<Transaction<'_>> {
+    match self {
+      DBRunner::Connection(c) => c.transaction(),
+      DBRunner::Transaction(_) => {
+        panic!("trasaction method called on transaction")
+      }
+    }
+  }
+  fn commit(self) -> SQLITEResult<()> {
+    match self {
+      DBRunner::Connection(_) => panic!("call commit on connection"),
+      DBRunner::Transaction(t) => t.commit(),
+    }
+  }
+}
+
+#[derive(Debug)]
+pub struct DB<'a> {
+  con: DBRunner<'a>,
+}
+
+impl<'a> DB<'a> {
+  pub fn new<P, F>(path: P, init: F) -> DBResult<DB<'a>>
   where
     P: AsRef<Path>,
     F: FnOnce(&Connection) -> SQLITEResult<()>,
@@ -28,8 +72,25 @@ impl DB {
     if !exists {
       init(&con).map_err(|s| DBError::wrap(Box::new(s)))?;
     }
-    let res = DB { con: Rc::new(con) };
+    let res = DB {
+      con: DBRunner::Connection(con),
+    };
     Ok(res)
+  }
+
+  pub fn transaction(&mut self) -> DBResult<DB<'_>> {
+    let tx = self
+      .con
+      .transaction()
+      .map_err(|e| DBError::wrap(Box::new(e)))?;
+    Ok(DB {
+      con: DBRunner::Transaction(tx),
+    })
+  }
+
+  pub fn commit(self) -> DBResult<()> {
+    self.con.commit().map_err(|e| DBError::wrap(Box::new(e)))?;
+    Ok(())
   }
 
   fn query_rows<T: StoreObject>(&self, q: &str) -> DBResult<Vec<T>> {
@@ -64,7 +125,7 @@ impl DB {
   }
 }
 
-impl Storage for DB {
+impl Storage for DB<'_> {
   fn save(&self, item: &impl StoreObject) -> DBResult<usize> {
     let id = if let FieldVal::Usize(id) = item.get_field_val("id") {
       id

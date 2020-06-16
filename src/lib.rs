@@ -47,7 +47,7 @@ where
   pub conf: AppConfig,
   pub root: PathBuf,
   pub printer: P,
-  pub db: T,
+  pub db: &'a T,
 }
 
 #[derive(Debug, Deserialize)]
@@ -122,7 +122,7 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
   #[cfg(debug_assertions)]
   debug_config(&mut conf);
 
-  let db = match DB::new(base_path.join(&conf.db_path), |con| {
+  let mut db = match DB::new(base_path.join(&conf.db_path), |con| {
     con.execute(
       "create table nodes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -152,23 +152,31 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
     Err(e) => return Err(CliError::DB { source: e }),
   };
 
+  let db = db.transaction()?;
+
   let history_db_path = base_path.join(&conf.history_db_path);
-  if history_db_path.exists() {
+  let res = if history_db_path.exists() {
     let hs = {
       match history_storage::sqlite::DB::new(history_db_path) {
         Ok(db) => db,
         Err(e) => return Err(CliError::DB { source: e }),
       }
     };
-    let db = DBWatcher::new(db, hs);
-    run_app(db, base_path, &info, conf)
+    let db = DBWatcher::new(&db, hs);
+    run_app(&db, base_path, &info, conf)
   } else {
-    run_app(db, base_path, &info, conf)
+    run_app(&db, base_path, &info, conf)
+  };
+
+  if res.is_ok() {
+    db.commit()?;
   }
+
+  res
 }
 
 fn run_app<T: DBRoot>(
-  db: T,
+  db: &T,
   base_path: PathBuf,
   info: &CrateInfo,
   conf: AppConfig,

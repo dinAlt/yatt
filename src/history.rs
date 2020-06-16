@@ -10,17 +10,17 @@ use yatt_orm::{
   HistoryStorage, Storage, StoreObject,
 };
 
-pub(crate) struct DBWatcher<T: DBRoot, S: HistoryStorage> {
-  db: T,
+pub(crate) struct DBWatcher<'a, T: DBRoot, S: HistoryStorage> {
+  db: &'a T,
   history_storage: S,
 }
 
-impl<T, S> DBWatcher<T, S>
+impl<'a, T, S> DBWatcher<'a, T, S>
 where
   T: DBRoot,
   S: HistoryStorage,
 {
-  pub fn new(db: T, history_storage: S) -> Self {
+  pub fn new(db: &'a T, history_storage: S) -> Self {
     DBWatcher {
       db,
       history_storage,
@@ -28,14 +28,14 @@ where
   }
 }
 
-impl<T, S> DBRoot for DBWatcher<T, S>
+impl<T, S> DBRoot for DBWatcher<'_, T, S>
 where
   T: DBRoot,
   S: HistoryStorage,
 {
 }
 
-impl<T, S> Storage for DBWatcher<T, S>
+impl<T, S> Storage for DBWatcher<'_, T, S>
 where
   T: DBRoot,
   S: HistoryStorage,

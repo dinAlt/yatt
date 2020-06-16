@@ -477,4 +477,4 @@ impl ToString for Interval {
   }
 }
 
-impl DBRoot for DB {}
+impl DBRoot for DB<'_> {}
