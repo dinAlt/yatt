@@ -165,6 +165,7 @@ impl Storage for DB<'_> {
               let res: Box<Option<isize>> = Box::new(None);
               res
             }
+            FieldVal::FieldName(f) => Box::new(f),
           };
 
           Some(res)
@@ -243,15 +244,67 @@ impl Storage for DB<'_> {
     s: Statement,
   ) -> DBResult<Vec<T>> {
     let strct = T::default();
-    let q = format!(
-      "{} {} from {}s {}",
-      s.build_select(),
-      strct.get_fields_list().join(", "),
-      strct.get_type_name(),
-      s.build_where()
+    let from = format!("{}s", strct.get_type_name());
+    let s = s.from(&from).alias("t");
+    let q = s.build_select_statement(strct.get_fields_list());
+    self.query_rows(&q)
+  }
+}
+
+trait BuildSelectStatement {
+  fn build_select_statement(&self, fields: &[&str]) -> String;
+}
+
+impl BuildSelectStatement for Statement<'_> {
+  fn build_select_statement(&self, fields: &[&str]) -> String {
+    let table = self.from.unwrap();
+    let alias = if let Some(alias) = self.alias {
+      alias
+    } else {
+      table.clone()
+    };
+    let aliased_flds: String = fields
+      .into_iter()
+      .map(|f| format!("{}.{}", &alias, &f))
+      .collect::<Vec<String>>()
+      .join(", ");
+    let unaliased_flds: String = fields
+      .into_iter()
+      .map(|f| format!("{}.{}", &table, &f))
+      .collect::<Vec<String>>()
+      .join(", ");
+    let select = format!(
+      "{} {} {} {}",
+      self.build_select(),
+      &aliased_flds,
+      self.build_from(),
+      self.build_where(),
     );
 
-    self.query_rows(&q)
+    let select = if let Some(recursive_on) = self.recursive_on {
+      format!(
+        "with recursive rec({}) as ({}
+      	 union select {} from {}, rec where {}.id = rec.{})
+      	 select * from rec {} {}",
+        fields.join(", "),
+        select,
+        &unaliased_flds,
+        &table,
+        &table,
+        recursive_on,
+        self.build_order(),
+        self.build_limit_offset(),
+      )
+    } else {
+      format!(
+        "{} {} {}",
+        select,
+        self.build_order(),
+        self.build_limit_offset(),
+      )
+    };
+
+    select
   }
 }
 
@@ -268,6 +321,20 @@ impl BuildSelect for Statement<'_> {
   }
 }
 
+trait BuildFrom {
+  fn build_from(&self) -> String;
+}
+
+impl BuildFrom for Statement<'_> {
+  fn build_from(&self) -> String {
+    if let Some(alias) = self.alias {
+      format!("from {} as {}", self.from.unwrap(), alias)
+    } else {
+      format!("from {}", self.from.unwrap())
+    }
+  }
+}
+
 trait BuildWhere {
   fn build_where(&self) -> String;
 }
@@ -281,17 +348,43 @@ impl BuildWhere for Statement<'_> {
         self.filter.as_ref().unwrap().build_where()
       );
     }
+
+    res
+  }
+}
+
+trait BuildOrder {
+  fn build_order(&self) -> String;
+}
+
+impl BuildOrder for Statement<'_> {
+  fn build_order(&self) -> String {
     if self.sorts.is_some() {
-      res += " order by ";
-      res += &self
-        .sorts
-        .as_ref()
-        .unwrap()
-        .iter()
-        .map(|s| s.build_where())
-        .collect::<Vec<String>>()
-        .join(", ")
+      format!(
+        "order by {}",
+        self
+          .sorts
+          .as_ref()
+          .unwrap()
+          .iter()
+          .map(|s| s.build_where())
+          .collect::<Vec<String>>()
+          .join(", ")
+      )
+    } else {
+      "".to_string()
     }
+  }
+}
+
+trait BuildLimitOffset {
+  fn build_limit_offset(&self) -> String;
+}
+
+impl BuildLimitOffset for Statement<'_> {
+  fn build_limit_offset(&self) -> String {
+    let mut res = String::new();
+
     if self.limit.is_some() {
       res += &format!(" limit {}", self.limit.unwrap());
     }
@@ -302,6 +395,7 @@ impl BuildWhere for Statement<'_> {
     res
   }
 }
+
 impl BuildWhere for SortItem {
   fn build_where(&self) -> String {
     format!("{} {}", self.0, self.1.build_where())
@@ -326,6 +420,7 @@ impl BuildWhere for FieldVal {
       FieldVal::I64(u) => u.to_string(),
       FieldVal::F64(u) => u.to_string(),
       FieldVal::U8Vec(u) => String::from_utf8(u.clone()).unwrap(),
+      FieldVal::FieldName(s) => format!("t.{}", s.to_string()),
     }
   }
 }
@@ -354,6 +449,9 @@ impl BuildWhere for Filter<'_> {
     match self {
       Filter::LogOp(lo) => lo.build_where(),
       Filter::CmpOp(co) => co.build_where(),
+      Filter::Exists(ex) => {
+        format!("exists ({})", ex.build_select_statement(&["id"]))
+      }
     }
   }
 }

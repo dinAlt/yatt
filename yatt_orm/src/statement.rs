@@ -7,6 +7,9 @@ pub struct Statement<'a> {
   pub limit: Option<usize>,
   pub offset: Option<usize>,
   pub distinct: bool,
+  pub recursive_on: Option<&'a str>,
+  pub from: Option<&'a str>,
+  pub alias: Option<&'a str>,
 }
 
 impl<'a> Statement<'a> {
@@ -32,6 +35,18 @@ impl<'a> Statement<'a> {
     self.distinct = true;
     self
   }
+  pub fn recursive_on(mut self, v: &'a str) -> Self {
+    self.recursive_on = Some(v);
+    self
+  }
+  pub fn from(mut self, v: &'a str) -> Self {
+    self.from = Some(v);
+    self
+  }
+  pub fn alias(mut self, v: &'a str) -> Self {
+    self.alias = Some(v);
+    self
+  }
 }
 
 #[derive(Debug, Clone)]
@@ -47,6 +62,7 @@ pub struct SortItem(pub String, pub SortDir);
 pub enum Filter<'a> {
   CmpOp(CmpOp<'a>),
   LogOp(Box<LogOp<'a>>),
+  Exists(Box<Statement<'a>>),
 }
 
 #[derive(Debug, Clone)]
@@ -78,6 +94,9 @@ pub fn offset<'a>(v: usize) -> Statement<'a> {
 pub fn distinct<'a>() -> Statement<'a> {
   Statement::default().distinct()
 }
+pub fn from<'a>(v: &'a str) -> Statement<'a> {
+  Statement::default().from(v)
+}
 pub fn gt(field: &str, value: impl Into<FieldVal>) -> Filter {
   Filter::CmpOp(CmpOp::Gt(field, value.into()))
 }
@@ -95,6 +114,9 @@ pub fn and<'a>(f1: Filter<'a>, f2: Filter<'a>) -> Filter<'a> {
 }
 pub fn or<'a>(f1: Filter<'a>, f2: Filter<'a>) -> Filter<'a> {
   Filter::LogOp(Box::new(LogOp::Or(f1, f2)))
+}
+pub fn exists<'a>(s: Statement<'a>) -> Filter<'a> {
+  Filter::Exists(Box::new(s))
 }
 pub fn not(f: Filter) -> Filter {
   Filter::LogOp(Box::new(LogOp::Not(f)))

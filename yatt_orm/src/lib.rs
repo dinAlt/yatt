@@ -120,6 +120,7 @@ pub enum FieldVal {
   String(String),
   Bool(bool),
   Null,
+  FieldName(String),
 }
 
 impl From<i32> for FieldVal {
