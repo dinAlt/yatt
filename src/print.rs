@@ -156,7 +156,7 @@ fn print_intervals_list<'a>(
   for i in d {
     if i.end.is_some() {
       print!(
-        "[{}] {} - {} [{}]\n",
+        "[{}] {} - {} task id: {}\n",
         s.id.apply_to(i.id),
         s.name.apply_to(format_datetime(&i.begin)),
         s.name.apply_to(format_datetime(&i.end.unwrap())),
