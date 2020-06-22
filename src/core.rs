@@ -200,6 +200,28 @@ pub trait DBRoot: Storage {
     Ok(Some(nodes.remove(0)))
   }
 
+  fn get_list_with_ancestors(
+    &self,
+    filt: Filter,
+  ) -> DBResult<Vec<Node>>
+  where
+    Self: Sized,
+  {
+    let stmt = filter(and(
+      filt,
+      not(exists(from("nodes").filter(and(
+        eq(Node::parent_id_n(), FieldVal::FieldName("id".into())),
+        eq(Node::deleted_n(), 0),
+      )))),
+    ))
+    .recursive_on(Node::parent_id_n())
+    .sort(Node::parent_id_n(), SortDir::Ascend)
+    .sort(Node::id_n(), SortDir::Ascend);
+
+    let matched: Vec<Node> = self.get_by_statement(stmt)?;
+    Ok(matched)
+  }
+
   fn get_filtered_forest(
     &self,
     filt: Filter,
