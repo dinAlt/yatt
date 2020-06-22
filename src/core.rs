@@ -7,8 +7,7 @@ use trees::{tr, Forest, ForestWalk, Visit};
 use yatt_orm::errors::{DBError, DBResult};
 use yatt_orm::sqlite::DB;
 use yatt_orm::statement::*;
-use yatt_orm::FieldVal;
-use yatt_orm::{Identifiers, Storage};
+use yatt_orm::{FieldVal, Identifiers, Storage};
 
 type PinNode<'a> = std::pin::Pin<&'a mut trees::Node<Node>>;
 
@@ -229,11 +228,8 @@ pub trait DBRoot: Storage {
   where
     Self: Sized,
   {
-    let filt = filter(filt)
-      .sort(Node::parent_id_n(), SortDir::Ascend)
-      .sort(Node::id_n(), SortDir::Ascend);
-
-    let mut matched: Vec<Node> = self.get_by_statement(filt)?;
+    let mut matched: Vec<Node> =
+      self.get_list_with_ancestors(filt)?;
     if matched.is_empty() {
       return Ok(None);
     }
