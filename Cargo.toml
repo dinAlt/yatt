@@ -1,34 +1,30 @@
 [package]
-name = "yatt"
-version = "0.9.0"
 authors = ["dinAlt <dinalt2@gmail.com>"]
-edition = "2018"
-description = "Yet Another Task Tracker"
-license = "MIT"
-repository = "https://github.com/dinAlt/yatt"
 categories = ["command-line-utilities"]
+description = "Yet Another Task Tracker"
+edition = "2018"
+license = "MIT"
+name = "yatt"
+repository = "https://github.com/dinAlt/yatt"
+version = "0.9.0"
 
 [dependencies]
+chrono = "0.4.7"
 clap = "2.33"
+config = "0.9"
+crossterm_input = "0.3"
+crossterm_style = "=0.3.3"
+custom_error = "1.7"
+dirs = "2.0"
 lazy_static = "1.4"
 regex = "1.2"
-custom_error = "1.7"
-termimad = "0.6"
-config = "0.9"
+rusqlite = {version = "0.23", default-features = false, features = ["chrono", "bundled"]}
 serde = "1.0"
-dirs = "2.0"
 serde_derive = "1.0"
-chrono = "0.4.7"
-crossterm_style = "=0.3.3"
-crossterm_input = "0.3"
-uuid = {version = "0.8", features = ["serde", "v4"]}
+termimad = "0.6"
 trees = "0.3"
-yatt_orm = { version="0.3", path = "yatt_orm" }
-
-[dependencies.rusqlite]
-version = "0.23"
-default-features = false
-features = ["chrono", "bundled"]
+uuid = {version = "0.8", features = ["serde", "v4"]}
+yatt_orm = {version = "0.3", path = "yatt_orm"}
 
 [workspace]
 members = [
@@ -40,9 +36,7 @@ members = [
 incremental = true
 
 [profile.release]
-opt-level = "s"
-lto = true
-panic = "abort"
 codegen-units = 4
-
-
+lto = true
+opt-level = "s"
+panic = "abort"
