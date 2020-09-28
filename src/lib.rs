@@ -72,10 +72,7 @@ fn parse_config(base_path: &PathBuf) -> CliResult<AppConfig> {
   if s.merge(File::with_name(path.to_str().unwrap())).is_err() {
     return Ok(AppConfig::default());
   }
-  match s.try_into() {
-    Ok(res) => Ok(res),
-    Err(e) => Err(CliError::Config { source: e }),
-  }
+  s.try_into().map_err(|e| CliError::Config { source: e })
 }
 
 fn make_args<'a>(info: &CrateInfo<'a>) -> ArgMatches<'a> {
@@ -122,7 +119,7 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
   #[cfg(debug_assertions)]
   debug_config(&mut conf);
 
-  let mut db = match DB::new(base_path.join(&conf.db_path), |con| {
+  let mut db = DB::new(base_path.join(&conf.db_path), |con| {
     con.execute(
       "create table nodes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -147,10 +144,8 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
     )?;
 
     Ok(())
-  }) {
-    Ok(db) => db,
-    Err(e) => return Err(CliError::DB { source: e }),
-  };
+  })
+  .map_err(|e| CliError::DB { source: e })?;
 
   let db = db.transaction()?;
 

@@ -155,7 +155,7 @@ pub trait DBRoot: Storage {
     Ok(nodes)
   }
 
-  /// Returns ancestors of node with givent id, inluding
+  /// Returns ancestors of node with given id, including
   /// the node with given id itself.
   fn ancestors(&self, id: usize) -> DBResult<Vec<Node>>
   where
