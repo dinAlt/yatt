@@ -12,7 +12,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   if let Some((node, interval)) = res {
     let task = &ctx.db.ancestors(node.id)?;
     ctx.printer.interval_cmd(&IntervalCmdData {
-      cmd_text: &"Running",
+      cmd_text: "Running",
       interval: IntervalData {
         interval: &interval,
         task,
@@ -29,7 +29,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         interval: IntervalData {
           interval: &interval,
           task,
-          title: &"Previous interval:",
+          title: "Previous interval:",
         },
       });
     } else {

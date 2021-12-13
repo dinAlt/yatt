@@ -1,5 +1,4 @@
 use std::cmp::*;
-use std::convert::TryFrom;
 
 use chrono::prelude::*;
 use std::error::Error;
@@ -13,9 +12,9 @@ type PinNode<'a> = std::pin::Pin<&'a mut trees::Node<Node>>;
 
 #[derive(Debug)]
 pub(crate) struct ImportedPath {
-  nodes: Vec<Node>,
-  source: String,
-  comment: String,
+  // nodes: Vec<Node>,
+// source: String,
+// comment: String,
 }
 
 pub(crate) trait PathSource {
@@ -62,7 +61,7 @@ pub trait DBRoot: Storage {
   {
     let interval: Vec<Interval> = self.get_by_statement(
       filter(ne(Interval::deleted_n(), 1))
-        .sort(&Interval::end_n(), SortDir::Descend)
+        .sort(Interval::end_n(), SortDir::Descend)
         .limit(1),
     )?;
 
@@ -96,7 +95,7 @@ pub trait DBRoot: Storage {
     let mut parent = FieldVal::Null;
     let mut res = Vec::new();
     for p in path.iter() {
-      let node = self.find_path_part(&p, &parent)?;
+      let node = self.find_path_part(p, &parent)?;
       if let Some(node) = node {
         parent = FieldVal::Usize(node.id);
         res.push(node);
@@ -132,7 +131,6 @@ pub trait DBRoot: Storage {
       return Ok(nodes);
     }
 
-    let high = usize::try_from(high).unwrap();
     let mut parent_id = None;
     if !nodes.is_empty() {
       parent_id = Some(nodes.last().unwrap().id)
@@ -361,11 +359,7 @@ fn try_adopt_node(
   let mut node = node;
 
   for tree in forest.iter_mut() {
-    node = if let Some(v) = try_add_child(tree, node) {
-      v
-    } else {
-      return None;
-    }
+    node = try_add_child(tree, node)?
   }
 
   Some(node)
@@ -374,18 +368,20 @@ fn try_add_child(tree: PinNode, node: Node) -> Option<Node> {
   let mut tree = tree;
   if tree.data.id == node.parent_id.unwrap() {
     tree.push_back(tr(node));
-    return None;
+    None
   } else {
     let mut node = node;
     for child in tree.iter_mut() {
       let res = try_add_child(child, node);
-      if res.is_none() {
-        return None;
-      } else {
-        node = res.unwrap();
+
+      if let Some(res) = res {
+        node = res;
+        continue;
       }
+
+      return None;
     }
-    return Some(node);
+    Some(node)
   }
 }
 
@@ -425,10 +421,10 @@ impl<'a, T: Clone> Iterator for FlattenForestIter<'a, T> {
         return Some(res);
       }
     }
-    return None;
+    None
   }
 }
-
+#[allow(clippy::derive_ord_xor_partial_ord)]
 #[derive(Debug, Clone, Identifiers, PartialEq, Eq, Ord)]
 pub struct Node {
   pub id: usize,

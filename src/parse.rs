@@ -20,9 +20,11 @@ pub fn parse_period(
   match parts.len() {
     1 => {
       let d = try_parse_date_time(parts[0]);
-      if d.is_ok() {
-        return Ok((d.unwrap(), Utc::now()));
+
+      if let Ok(d) = d {
+        return Ok((d, Utc::now()));
       }
+
       try_parse_period(parts[0], opts)
     }
     2 => {
@@ -72,9 +74,11 @@ fn try_parse_date_time(s: &str) -> CliResult<DateTime<Utc>> {
   match parts.len() {
     1 => {
       let d = try_parse_date_part(s);
-      if d.is_ok() {
-        return Ok(d.unwrap().and_hms(0, 0, 0).into());
-      };
+
+      if let Ok(d) = d {
+        return Ok(d.and_hms(0, 0, 0).into());
+      }
+
       try_parse_time_part(s, Local::today())
     }
     2 => {

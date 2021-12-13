@@ -26,16 +26,14 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
     } else {
       (node, Some(interval.pop().unwrap()))
     }
+  } else if let Some((node, interval)) = ctx.db.cur_running()? {
+    (node, Some(interval))
+  } else if let Some((node, interval)) = ctx.db.last_running()? {
+    (node, Some(interval))
   } else {
-    if let Some((node, interval)) = ctx.db.cur_running()? {
-      (node, Some(interval))
-    } else if let Some((node, interval)) = ctx.db.last_running()? {
-      (node, Some(interval))
-    } else {
-      return Err(CliError::Cmd {
-        message: "There is no previous running task".into(),
-      });
-    }
+    return Err(CliError::Cmd {
+      message: "There is no previous running task".into(),
+    });
   };
 
   let interval = match interval {
@@ -92,7 +90,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
           }
 
           Interval {
-            begin: begin,
+            begin,
             end: Some(end),
             closed: false,
             deleted: false,
@@ -119,7 +117,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         }
 
         Interval {
-          begin: begin,
+          begin,
           end: interval.end,
           closed: false,
           deleted: false,

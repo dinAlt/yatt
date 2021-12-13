@@ -32,7 +32,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
       ),
       not(gt(Interval::deleted_n(), 0)),
     ))
-    .sort(&Interval::begin_n(), SortDir::Ascend),
+    .sort(Interval::begin_n(), SortDir::Ascend),
   )?;
   if !intervals.is_empty() {
     if intervals[0].begin < start {
@@ -47,7 +47,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   }
 
   let ids = intervals.iter().fold(vec![], |mut acc, v| {
-    if acc.iter().find(|&&n| n == v.node_id.unwrap()).is_none() {
+    if !acc.iter().any(|&n| n == v.node_id.unwrap()) {
       acc.push(v.node_id.unwrap());
     };
     acc

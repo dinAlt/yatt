@@ -96,7 +96,7 @@ impl<'a> DB<'a> {
   fn query_rows<T: StoreObject>(&self, q: &str) -> DBResult<Vec<T>> {
     let mut q = self
       .con
-      .prepare(&q)
+      .prepare(q)
       .map_err(|e| DBError::wrap(Box::new(e)))?;
 
     let mut rows =
@@ -160,7 +160,7 @@ impl Storage for DB<'_> {
             FieldVal::DateTime(v) => Box::new(v),
             FieldVal::F64(v) => Box::new(v),
             FieldVal::I64(v) => Box::new(v),
-            FieldVal::U8Vec(v) => Box::new(v.clone()),
+            FieldVal::U8Vec(v) => Box::new(v),
             FieldVal::Null => {
               let res: Box<Option<isize>> = Box::new(None);
               res
@@ -192,7 +192,7 @@ impl Storage for DB<'_> {
         "insert into {}s ({}) values ({})",
         item.get_type_name(),
         non_id_fields
-          .map(|(_, v)| format!("{}", v))
+          .map(|(_, v)| v.to_string())
           .collect::<Vec<String>>()
           .join(", "),
         (1..field_list.len())
@@ -232,12 +232,10 @@ impl Storage for DB<'_> {
       strct.get_type_name(),
       filter.build_where()
     );
-    Ok(
-      self
-        .con
-        .execute(&q, NO_PARAMS)
-        .map_err(|e| DBError::wrap(Box::new(e)))?,
-    )
+    self
+      .con
+      .execute(&q, NO_PARAMS)
+      .map_err(|e| DBError::wrap(Box::new(e)))
   }
   fn get_by_statement<T: StoreObject>(
     &self,
@@ -261,15 +259,15 @@ impl BuildSelectStatement for Statement<'_> {
     let alias = if let Some(alias) = self.alias {
       alias
     } else {
-      table.clone()
+      table
     };
     let aliased_flds: String = fields
-      .into_iter()
+      .iter()
       .map(|f| format!("{}.{}", &alias, &f))
       .collect::<Vec<String>>()
       .join(", ");
     let unaliased_flds: String = fields
-      .into_iter()
+      .iter()
       .map(|f| format!("{}.{}", &table, &f))
       .collect::<Vec<String>>()
       .join(", ");
@@ -414,13 +412,13 @@ impl BuildWhere for FieldVal {
     match self {
       FieldVal::Usize(u) => u.to_string(),
       FieldVal::DateTime(d) => format!("\"{}\"", d.to_rfc3339()),
-      FieldVal::String(s) => format!("\"{}\"", s.to_string()),
+      FieldVal::String(s) => format!("\"{}\"", s),
       FieldVal::Bool(b) => (if *b { 1 } else { 0 }).to_string(),
       FieldVal::Null => String::from("null"),
       FieldVal::I64(u) => u.to_string(),
       FieldVal::F64(u) => u.to_string(),
       FieldVal::U8Vec(u) => String::from_utf8(u.clone()).unwrap(),
-      FieldVal::FieldName(s) => format!("t.{}", s.to_string()),
+      FieldVal::FieldName(s) => format!("t.{}", s),
     }
   }
 }

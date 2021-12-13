@@ -2,6 +2,7 @@ use crate::core::{Interval, Node};
 use crate::*;
 use yatt_orm::statement::*;
 
+#[allow(clippy::field_reassign_with_default)]
 pub(crate) fn exec<T: DBRoot, P: Printer>(
   ctx: &AppContext<T, P>,
   args: &ArgMatches,
@@ -34,7 +35,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         ne(Interval::deleted_n(), 1),
         ne(Interval::closed_n(), 1),
       ))
-      .sort(&Interval::end_n(), SortDir::Descend)
+      .sort(Interval::end_n(), SortDir::Descend)
       .limit(1),
     )?;
 
@@ -69,7 +70,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
 
   let task = &ctx.db.ancestors(node.id)?;
   ctx.printer.interval_cmd(&IntervalCmdData {
-    cmd_text: &"Restarting...",
+    cmd_text: "Restarting...",
     interval: IntervalData {
       interval: &interval,
       task,

@@ -70,16 +70,9 @@ pub trait Markdown {
   fn markdown(&self) -> String;
 }
 
+#[derive(Default)]
 pub struct TermPrinter {
   style: AppStyle,
-}
-
-impl Default for TermPrinter {
-  fn default() -> Self {
-    TermPrinter {
-      style: Default::default(),
-    }
-  }
 }
 
 impl Printer for TermPrinter {
@@ -132,7 +125,7 @@ impl TermPrinter {
   }
 }
 
-fn print_task_list<'a>(
+fn print_task_list(
   d: impl Iterator<Item = Vec<Node>>,
   s: &TaskListStyle,
 ) {
@@ -145,18 +138,18 @@ fn print_task_list<'a>(
       }
       print!("{}", s.name.apply_to(&t.label));
     }
-    print!(" {} \n", format_datetime(&last.created));
+    println!(" {} ", format_datetime(&last.created));
   }
 }
 
-fn print_intervals_list<'a>(
+fn print_intervals_list(
   d: impl Iterator<Item = Interval>,
   s: &TaskListStyle,
 ) {
   for i in d {
     if i.end.is_some() {
-      print!(
-        "[{}] {} - {} task id: {}\n",
+      println!(
+        "[{}] {} - {} task id: {}",
         s.id.apply_to(i.id),
         s.name.apply_to(format_datetime(&i.begin)),
         s.name.apply_to(format_datetime(&i.end.unwrap())),

@@ -4,14 +4,12 @@ extern crate serde_derive;
 extern crate lazy_static;
 
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::core::DBRoot;
 use chrono::prelude::*;
-use clap;
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use config::{Config, File};
-use dirs;
 
 mod commands;
 mod core;
@@ -66,7 +64,7 @@ impl Default for AppConfig {
   }
 }
 
-fn parse_config(base_path: &PathBuf) -> CliResult<AppConfig> {
+fn parse_config(base_path: &Path) -> CliResult<AppConfig> {
   let mut s = Config::new();
   let path = base_path.join("config");
   if s.merge(File::with_name(path.to_str().unwrap())).is_err() {

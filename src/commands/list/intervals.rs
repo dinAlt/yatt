@@ -26,8 +26,8 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
 
   let intervals: Vec<Interval> = ctx.db.get_by_statement(
     filter(filters)
-      .sort(&Interval::begin_n(), SortDir::Ascend)
-      .sort(&Interval::node_id_n(), SortDir::Ascend),
+      .sort(Interval::begin_n(), SortDir::Ascend)
+      .sort(Interval::node_id_n(), SortDir::Ascend),
   )?;
 
   ctx.printer.interval_list(intervals.into_iter());

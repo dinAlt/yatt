@@ -26,16 +26,14 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
     } else {
       (node, Some(interval.pop().unwrap()))
     }
+  } else if let Some((node, interval)) = ctx.db.cur_running()? {
+    (node, Some(interval))
+  } else if let Some((node, interval)) = ctx.db.last_running()? {
+    (node, Some(interval))
   } else {
-    if let Some((node, interval)) = ctx.db.cur_running()? {
-      (node, Some(interval))
-    } else if let Some((node, interval)) = ctx.db.last_running()? {
-      (node, Some(interval))
-    } else {
-      return Err(CliError::Cmd {
-        message: "There is no previous running task".into(),
-      });
-    }
+    return Err(CliError::Cmd {
+      message: "There is no previous running task".into(),
+    });
   };
 
   if interval.is_none() {
@@ -75,7 +73,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   let nodes = ctx.db.ancestors(node.id)?;
 
   ctx.printer.interval_cmd(&IntervalCmdData {
-    cmd_text: &"Interval is truncated",
+    cmd_text: "Interval is truncated",
     interval: IntervalData {
       interval: &interval,
       task: &nodes,

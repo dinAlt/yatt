@@ -35,7 +35,7 @@ custom_error! {pub TaskError
         task: Vec<Node>} = @{
             format!("Error: {}, task: {}, interval: {}",
             message,
-            format_task_name(&task),
+            format_task_name(task),
             interval.to_string()) },
   Cmd {message: String} = "{}",
 }

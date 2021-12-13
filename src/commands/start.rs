@@ -36,7 +36,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   ctx.db.save(&interval)?;
 
   ctx.printer.interval_cmd(&IntervalCmdData {
-    cmd_text: &"Starting...",
+    cmd_text: "Starting...",
     interval: IntervalData {
       interval: &interval,
       task: &nodes,

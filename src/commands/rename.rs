@@ -18,7 +18,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   ctx.db.save(path.last().unwrap())?;
 
   ctx.printer.node_cmd(&NodeCmdData {
-    cmd_text: "Successfully renamed.".into(),
+    cmd_text: "Successfully renamed.",
     node: NodeData {
       title: NodeData::default_title(),
       node: &path,

@@ -124,10 +124,10 @@ impl Markdown for Row {
           format_datetime_opts(e, &dtopts)
         )
       }
-      Row::Table(v) => format_cells(&v),
-      Row::TableHeader(v) => format_header(&v),
-      Row::SubTotal(v) => format_subtotal(&v),
-      Row::Total(v) => format_total(&v),
+      Row::Table(v) => format_cells(v),
+      Row::TableHeader(v) => format_header(v),
+      Row::SubTotal(v) => format_subtotal(v),
+      Row::Total(v) => format_total(v),
       Row::Nested(v) => v
         .iter()
         .map(|c| format!("|{}", c.markdown()))
@@ -196,8 +196,8 @@ impl Markdown for Cell {
       Cell::Usize(v) => v.to_string(),
       Cell::Isize(v) => v.to_string(),
       Cell::String(v) => v.to_owned(),
-      Cell::DateTime(v) => format_datetime(&v),
-      Cell::Duration(v) => format_duration(&v),
+      Cell::DateTime(v) => format_datetime(v),
+      Cell::Duration(v) => format_duration(v),
       Cell::Nested(v, p) => {
         let mut pad = "".to_string();
         let mark = match p {

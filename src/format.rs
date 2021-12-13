@@ -8,7 +8,6 @@ pub(crate) fn format_task_name(t: &[Node]) -> String {
     .map(|n| n.label.clone())
     .collect::<Vec<String>>()
     .join(" -> ")
-    .to_string()
 }
 
 #[derive(Debug, Default)]

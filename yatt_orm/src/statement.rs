@@ -18,7 +18,7 @@ impl<'a> Statement<'a> {
     self
   }
   pub fn sort(mut self, field: &str, direction: SortDir) -> Self {
-    let mut sorts = self.sorts.unwrap_or_else(|| vec![]);
+    let mut sorts = self.sorts.unwrap_or_else(Vec::new);
     sorts.push(SortItem(field.into(), direction));
     self.sorts = Some(sorts);
     self
@@ -94,7 +94,7 @@ pub fn offset<'a>(v: usize) -> Statement<'a> {
 pub fn distinct<'a>() -> Statement<'a> {
   Statement::default().distinct()
 }
-pub fn from<'a>(v: &'a str) -> Statement<'a> {
+pub fn from(v: &str) -> Statement {
   Statement::default().from(v)
 }
 pub fn gt(field: &str, value: impl Into<FieldVal>) -> Filter {
@@ -115,7 +115,7 @@ pub fn and<'a>(f1: Filter<'a>, f2: Filter<'a>) -> Filter<'a> {
 pub fn or<'a>(f1: Filter<'a>, f2: Filter<'a>) -> Filter<'a> {
   Filter::LogOp(Box::new(LogOp::Or(f1, f2)))
 }
-pub fn exists<'a>(s: Statement<'a>) -> Filter<'a> {
+pub fn exists(s: Statement) -> Filter {
   Filter::Exists(Box::new(s))
 }
 pub fn not(f: Filter) -> Filter {

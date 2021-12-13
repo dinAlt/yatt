@@ -1,8 +1,8 @@
 [package]
 name = "yatt_orm"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["dinAlt <dinalt2@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "MIT"
 description = "Yatt orm"
 repository = "https://github.com/dinAlt/yatt/tree/master/yatt_orm"
@@ -10,7 +10,7 @@ repository = "https://github.com/dinAlt/yatt/tree/master/yatt_orm"
 [dependencies]
 chrono = "0.4.7"
 custom_error = "1.7"
-yatt_orm_derive = { version = "0.2.1", path = "yatt_orm_derive" }
+yatt_orm_derive = { version = "0.3", path = "yatt_orm_derive" }
 uuid = {version = "0.8", features = ["serde", "v4"]}
 
 [dependencies.rusqlite]

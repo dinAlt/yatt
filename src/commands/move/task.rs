@@ -36,7 +36,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   path.push(node);
 
   ctx.printer.node_cmd(&NodeCmdData {
-    cmd_text: "Successfully moved.".into(),
+    cmd_text: "Successfully moved.",
     node: NodeData {
       title: NodeData::default_title(),
       node: &path,

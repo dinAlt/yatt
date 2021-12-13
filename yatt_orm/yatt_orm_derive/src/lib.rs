@@ -1,9 +1,7 @@
 extern crate proc_macro;
 
 use crate::proc_macro::TokenStream;
-use proc_macro2;
 use quote::{format_ident, quote};
-use syn;
 
 #[proc_macro_derive(Identifiers)]
 pub fn identifiers_derive(input: TokenStream) -> TokenStream {
@@ -88,7 +86,7 @@ fn impl_get_field_val(
       fn get_field_val(&self, field_name: &str) -> yatt_orm::FieldVal {
           match field_name {
               #(#res)*
-               _ => panic!(format!("there is no field {} in struct {}", field_name, #quote_name)),
+               _ => panic!("{}", format!("there is no field {} in struct {}", field_name, #quote_name)),
            }
       }
   }
@@ -120,7 +118,7 @@ fn impl_set_field_val(
           let val: yatt_orm::FieldVal = val.into();
           match field_name {
               #(#res)*
-               _ => panic!(format!("there is no field {} in struct {}", field_name, #quote_name)),
+               _ => panic!("{}", format!("there is no field {} in struct {}", field_name, #quote_name)),
            }
           Ok(())
       }

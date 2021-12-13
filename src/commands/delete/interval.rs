@@ -23,7 +23,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         ne(Interval::deleted_n(), 1),
         ne(Interval::end_n(), FieldVal::Null),
       ))
-      .sort(&Interval::begin_n(), SortDir::Descend)
+      .sort(Interval::begin_n(), SortDir::Descend)
       .limit(offset),
     )?;
     if intervals.len() < offset {
@@ -68,12 +68,12 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
       .map_err(|source| CliError::DB { source })?;
 
     ctx.printer.interval_cmd(&IntervalCmdData {
-      cmd_text: &"Successfully deleted...",
+      cmd_text: "Successfully deleted...",
       interval: interval_data,
     });
   } else {
     ctx.printer.interval_cmd(&IntervalCmdData {
-      cmd_text: &"Are you sure, you want to delete interval? [y/n]",
+      cmd_text: "Are you sure, you want to delete interval? [y/n]",
       interval: interval_data,
     });
     let input = input();

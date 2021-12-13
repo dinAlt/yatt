@@ -37,7 +37,7 @@ pub trait Storage {
   where
     Self: Sized,
   {
-    let res = self.get_by_statement::<T>(filter(eq(&"id", id)))?;
+    let res = self.get_by_statement::<T>(filter(eq("id", id)))?;
     if res.is_empty() {
       return Err(DBError::IsEmpty {
         message: format!("no row with id {}", id),
@@ -180,12 +180,12 @@ impl From<&FieldVal> for FieldVal {
 }
 impl From<bool> for FieldVal {
   fn from(val: bool) -> FieldVal {
-    FieldVal::Bool(val.clone())
+    FieldVal::Bool(val)
   }
 }
 impl From<&bool> for FieldVal {
   fn from(val: &bool) -> FieldVal {
-    FieldVal::Bool(val.clone())
+    FieldVal::Bool(*val)
   }
 }
 impl From<Option<DateTime<Utc>>> for FieldVal {
@@ -227,8 +227,8 @@ impl TryFrom<FieldVal> for DateTime<Local> {
 
   fn try_from(val: FieldVal) -> Result<Self, Self::Error> {
     match val {
-      FieldVal::DateTime(v) => return Ok(v.into()),
-      FieldVal::I64(v) => return Ok(Utc.timestamp_millis(v).into()),
+      FieldVal::DateTime(v) => Ok(v.into()),
+      FieldVal::I64(v) => Ok(Utc.timestamp_millis(v).into()),
       FieldVal::U8Vec(v) => {
         let strd = String::from_utf8(v)
           .map_err(|e| DBError::wrap(Box::new(e)))?;
@@ -253,7 +253,7 @@ impl TryFrom<FieldVal> for DateTime<Utc> {
         let strd = String::from_utf8(v)
           .map_err(|e| DBError::wrap(Box::new(e)))?;
         let dt = DateTime::parse_from_rfc3339(&strd).unwrap();
-        return Ok(dt.with_timezone(&Utc));
+        Ok(dt.with_timezone(&Utc))
       }
       _ => Err(DBError::Convert {
         message: "wrong enum value".into(),

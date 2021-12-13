@@ -1,8 +1,8 @@
 [package]
 name = "yatt_orm_derive"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["dinAlt <dinalt2@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "MIT"
 description = "Yet Another Task Tracker"
 repository = "https://github.com/dinAlt/yatt/tree/master/yatt_orm/yatt_orm_derive"

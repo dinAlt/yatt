@@ -23,7 +23,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   ctx.db.save(&interval)?;
 
   ctx.printer.interval_cmd(&IntervalCmdData {
-    cmd_text: &"Current interval canceled...",
+    cmd_text: "Current interval canceled...",
     interval: IntervalData {
       interval: &interval,
       task: &nodes,
