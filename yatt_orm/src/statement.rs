@@ -18,7 +18,7 @@ impl<'a> Statement<'a> {
     self
   }
   pub fn sort(mut self, field: &str, direction: SortDir) -> Self {
-    let mut sorts = self.sorts.unwrap_or_else(Vec::new);
+    let mut sorts = self.sorts.unwrap_or_default();
     sorts.push(SortItem(field.into(), direction));
     self.sorts = Some(sorts);
     self
