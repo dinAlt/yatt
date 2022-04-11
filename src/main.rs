@@ -2,16 +2,19 @@
 extern crate clap;
 
 use std::process::exit;
-
+use yatt::{errors::*, *};
 fn main() {
-  if yatt::run(yatt::CrateInfo {
+  if let Err(err) = run(CrateInfo {
     name: crate_name!(),
     version: crate_version!(),
     authors: crate_authors!(),
     description: crate_description!(),
-  })
-  .is_err()
-  {
+  }) {
+    match err {
+      CliError::Unexpected { .. } => println!("{}", err),
+      CliError::Wrapped { .. } => println!("{}", err),
+      _ => {}
+    };
     exit(1);
   }
 }

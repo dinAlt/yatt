@@ -14,7 +14,7 @@ use semver::Version;
 
 mod commands;
 mod core;
-mod errors;
+pub mod errors;
 mod format;
 mod history;
 mod history_storage;
