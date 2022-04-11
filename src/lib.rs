@@ -10,6 +10,7 @@ use crate::core::DBRoot;
 use chrono::prelude::*;
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use config::{Config, File};
+use semver::Version;
 
 mod commands;
 mod core;
@@ -118,8 +119,34 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
   debug_config(&mut conf);
 
   let mut db = DB::new(base_path.join(&conf.db_path), |con| {
-    con.execute(
-      "create table nodes (
+    let db_ver =
+      con.query_row("select version from version", NO_PARAMS, |r| {
+        r.get(0)
+      });
+    let db_ver = match db_ver {
+      Ok(ver) => Ok(ver),
+      Err(e) => {
+        if !e.to_string().contains("no such table: version") {
+          Err(e)
+        } else {
+          Ok(String::from(""))
+        }
+      }
+    }?;
+    let db_ver = if db_ver.is_empty() {
+      con.execute(
+        "create table version (version TEXT NOT NULL)",
+        NO_PARAMS,
+      )?;
+      con.execute("insert into version values ('0')", NO_PARAMS)?;
+      if con
+        .query_row("select id from nodes limit 1", NO_PARAMS, |_| {
+          Ok(())
+        })
+        .is_err()
+      {
+        con.execute(
+          "create table nodes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             label TEXT NOT NULL,
             parent_id INTEGER,
@@ -127,10 +154,10 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
             closed INTEGER DEFAULT 0,
             deleted integer default 0
             )",
-      NO_PARAMS,
-    )?;
-    con.execute(
-      "create table intervals (
+          NO_PARAMS,
+        )?;
+        con.execute(
+          "create table intervals (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             node_id integer,
              begin integer NOT NULL,
@@ -138,12 +165,25 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
              deleted integer default 0,
              closed integer default 0
              )",
-      NO_PARAMS,
-    )?;
+          NO_PARAMS,
+        )?;
+      };
+      String::from("0.0.0")
+    } else {
+      db_ver
+    };
+
+    let db_sem_ver = Version::parse(&db_ver).unwrap();
+    let crate_ver = clap::crate_version!();
+    let crate_sem_ver = Version::parse(crate_ver).unwrap();
+
+    if db_sem_ver < crate_sem_ver {
+      con.execute("update version set version = ?", &[crate_ver])?;
+    }
 
     Ok(())
   })
-  .map_err(|e| CliError::DB { source: e })?;
+  .map_err(|e| CliError::Wrapped { source: e.into() })?;
 
   let db = db.transaction()?;
 

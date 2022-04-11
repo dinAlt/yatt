@@ -25,6 +25,7 @@ termimad = "0.6"
 trees = "0.3"
 uuid = {version = "0.8", features = ["serde", "v4"]}
 yatt_orm = {version = "0.4", path = "yatt_orm"}
+semver = "1.0.7"
 
 [workspace]
 members = [

@@ -66,12 +66,9 @@ impl<'a> DB<'a> {
     P: AsRef<Path>,
     F: FnOnce(&Connection) -> SQLITEResult<()>,
   {
-    let exists = path.as_ref().exists();
     let con = Connection::open(path)
       .map_err(|s| DBError::wrap(Box::new(s)))?;
-    if !exists {
-      init(&con).map_err(|s| DBError::wrap(Box::new(s)))?;
-    }
+    init(&con).map_err(|s| DBError::wrap(Box::new(s)))?;
     let res = DB {
       con: DBRunner::Connection(con),
     };
