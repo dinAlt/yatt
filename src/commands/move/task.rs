@@ -13,7 +13,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   let parent_id: usize =
     args.value_of("PARENT_ID").unwrap().parse().map_err(|_| {
       CliError::Parse {
-        message: "Unable to parse task ID".into(),
+        message: "Unable to parse PARENT_ID".into(),
       }
     })?;
 
