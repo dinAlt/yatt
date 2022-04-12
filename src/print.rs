@@ -208,10 +208,22 @@ fn print_node_info(d: &NodeData, s: &TaskStyle) {
     }
   }
   println!();
+  let last = d.node.last().unwrap();
   print!(
     "  Created: {}",
-    s.created_time
-      .apply_to(format_datetime(&d.node.last().unwrap().created))
+    s.created_time.apply_to(format_datetime(&last.created))
   );
+  println!();
+  if !last.tags.is_empty() {
+    print!(
+      "  Tags: {}",
+      last
+        .tags
+        .trim_matches(',')
+        .split(',')
+        .collect::<Vec<_>>()
+        .join(", ")
+    );
+  }
   println!();
 }

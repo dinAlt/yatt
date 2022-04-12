@@ -13,7 +13,9 @@ mod root;
 mod start;
 mod state;
 mod stop;
+mod tag;
 mod truncate;
+mod untag;
 
 pub fn exec<T: DBRoot, P: Printer>(
   ctx: &AppContext<T, P>,
@@ -32,6 +34,8 @@ pub fn exec<T: DBRoot, P: Printer>(
     ("rename", Some(m)) => rename::exec(ctx, m),
     ("move", Some(m)) => r#move::exec(ctx, m),
     ("merge", Some(m)) => merge::exec(ctx, m),
+    ("tag", Some(m)) => tag::exec(ctx, m),
+    ("untag", Some(m)) => untag::exec(ctx, m),
     _ => root::exec(ctx, &ctx.args),
   }
 }
@@ -50,6 +54,8 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
   let app = rename::register(app);
   let app = r#move::register(app);
   let app = merge::register(app);
+  let app = tag::register(app);
+  let app = untag::register(app);
 
   delete::register(app)
 }

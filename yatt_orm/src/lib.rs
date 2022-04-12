@@ -217,7 +217,7 @@ impl TryFrom<FieldVal> for usize {
         Ok(v.try_into().map_err(|e| DBError::wrap(Box::new(e)))?)
       }
       _ => Err(DBError::Convert {
-        message: "wrong enum value".into(),
+        message: "wrong enum value usize".into(),
       }),
     }
   }
@@ -237,7 +237,7 @@ impl TryFrom<FieldVal> for DateTime<Local> {
         Ok(dt.with_timezone(&Local))
       }
       _ => Err(DBError::Convert {
-        message: "wrong enum value".into(),
+        message: "wrong enum value for DateTime<Local>".into(),
       }),
     }
   }
@@ -256,7 +256,7 @@ impl TryFrom<FieldVal> for DateTime<Utc> {
         Ok(dt.with_timezone(&Utc))
       }
       _ => Err(DBError::Convert {
-        message: "wrong enum value".into(),
+        message: "wrong enum value for DateTime<Utc>".into(),
       }),
     }
   }
@@ -272,7 +272,7 @@ impl TryFrom<FieldVal> for String {
           .map_err(|e| DBError::wrap(Box::new(e)))?,
       ),
       _ => Err(DBError::Convert {
-        message: "wrong enum value".into(),
+        message: "wrong enum value for String".into(),
       }),
     }
   }
@@ -285,7 +285,7 @@ impl TryFrom<FieldVal> for bool {
       FieldVal::Bool(v) => Ok(v),
       FieldVal::I64(v) => Ok(v > 0),
       _ => Err(DBError::Convert {
-        message: "wrong enum value".into(),
+        message: "wrong enum value for bool".into(),
       }),
     }
   }

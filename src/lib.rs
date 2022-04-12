@@ -173,6 +173,12 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
       db_ver
     };
 
+    if db_ver == "0.0.0" {
+      con.execute(
+        "alter table nodes add column tags TEXT NOT NULL DEFAULT ''",
+        NO_PARAMS,
+      )?;
+    }
     let db_sem_ver = Version::parse(&db_ver).unwrap();
     let crate_ver = clap::crate_version!();
     let crate_sem_ver = Version::parse(crate_ver).unwrap();

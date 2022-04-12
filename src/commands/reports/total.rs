@@ -21,18 +21,56 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
   } else {
     (Local::today().and_hms(0, 0, 0).into(), Local::now().into())
   };
-  let mut intervals: Vec<Interval> = ctx.db.get_by_statement(
-    filter(and(
-      and(
-        or(
-          gt(Interval::end_n(), start),
-          eq(Interval::end_n(), FieldVal::Null),
-        ),
-        lt(Interval::begin_n(), end),
+  let tags = if let Some(tags) = args.value_of("tags") {
+    tags
+      .split(',')
+      .filter(|v| !v.is_empty())
+      .map(|v| v.to_lowercase())
+      .collect()
+  } else {
+    Vec::new()
+  };
+
+  let mut tag_filters = None;
+  for tag in tags {
+    let neg = tag.starts_with('^');
+    let tag = tag.trim_start_matches('^');
+    let fltr = if neg {
+      not(includes(Node::tags_n(), tag))
+    } else {
+      includes(Node::tags_n(), tag)
+    };
+
+    tag_filters = if let Some(prev_fltr) = tag_filters {
+      Some(and(prev_fltr, fltr))
+    } else {
+      Some(fltr)
+    }
+  }
+  let mut filters = and(
+    and(
+      or(
+        gt(Interval::end_n(), start),
+        eq(Interval::end_n(), FieldVal::Null),
       ),
-      not(gt(Interval::deleted_n(), 0)),
-    ))
-    .sort(Interval::begin_n(), SortDir::Ascend),
+      lt(Interval::begin_n(), end),
+    ),
+    not(gt(Interval::deleted_n(), 0)),
+  );
+  if let Some(tag_filters) = tag_filters {
+    filters = and(
+      filters,
+      exists(from("nodes").filter(and(
+        eq(
+          Node::id_n(),
+          FieldVal::FieldName(Interval::node_id_n().into()),
+        ),
+        tag_filters,
+      ))),
+    );
+  }
+  let mut intervals: Vec<Interval> = ctx.db.get_by_statement(
+    filter(filters).sort(Interval::begin_n(), SortDir::Ascend),
   )?;
   if !intervals.is_empty() {
     if intervals[0].begin < start {
@@ -183,6 +221,13 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
           .help("report period")
           .takes_value(true)
           .multiple(true),
+      )
+      .arg(
+        Arg::with_name("tags")
+          .short("t")
+          .long("tags")
+          .help("comma separated tag list (use \"^\" before tag for negation)")
+          .takes_value(true)
       ),
   )
 }

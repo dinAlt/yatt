@@ -63,6 +63,7 @@ pub enum Filter<'a> {
   CmpOp(CmpOp<'a>),
   LogOp(Box<LogOp<'a>>),
   Exists(Box<Statement<'a>>),
+  Includes(&'a str, FieldVal),
 }
 
 #[derive(Debug, Clone)]
@@ -120,4 +121,7 @@ pub fn exists(s: Statement) -> Filter {
 }
 pub fn not(f: Filter) -> Filter {
   Filter::LogOp(Box::new(LogOp::Not(f)))
+}
+pub fn includes<'a>(field: &'a str, value: &str) -> Filter<'a> {
+  Filter::Includes(field, value.into())
 }

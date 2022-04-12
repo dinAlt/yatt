@@ -1,3 +1,4 @@
+use super::FieldVal;
 use std::convert::TryFrom;
 use std::path::Path;
 
@@ -446,6 +447,15 @@ impl BuildWhere for Filter<'_> {
       Filter::CmpOp(co) => co.build_where(),
       Filter::Exists(ex) => {
         format!("exists ({})", ex.build_select_statement(&["id"]))
+      }
+      Filter::Includes(field, val) => {
+        format!(
+          "{} like '%{}%'",
+          field,
+          String::try_from(val.clone()).expect(
+            "Filter::Includes expects value to be of type String"
+          )
+        )
       }
     }
   }

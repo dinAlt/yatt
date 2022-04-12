@@ -1,4 +1,6 @@
 use std::cmp::*;
+use std::collections::hash_map::RandomState;
+use std::collections::HashSet;
 
 use chrono::prelude::*;
 use std::error::Error;
@@ -137,13 +139,11 @@ pub trait DBRoot: Storage {
     }
     for n in path.iter().take(p_len).skip(high) {
       let mut node = Node {
-        id: 0,
         parent_id,
         label: n.to_string(),
-        created: Utc::now(),
-        closed: false,
-        deleted: false,
+        ..Node::default()
       };
+
       let id = self.save(&node)?;
       node.id = id;
       parent_id = Some(id);
@@ -433,6 +433,7 @@ pub struct Node {
   pub created: DateTime<Utc>,
   pub closed: bool,
   pub deleted: bool,
+  pub tags: String,
 }
 
 impl PartialOrd for Node {
@@ -450,12 +451,52 @@ impl Default for Node {
       created: Utc::now(),
       closed: false,
       deleted: false,
+      tags: String::new(),
     }
   }
 }
 impl ToString for Node {
   fn to_string(&self) -> String {
     self.label.to_owned()
+  }
+}
+impl Node {
+  pub fn get_tags(&self) -> Vec<String> {
+    self
+      .tags
+      .trim_matches(',')
+      .split(',')
+      .map(String::from)
+      .collect()
+  }
+  pub fn set_tags(&mut self, tags: &[String]) {
+    let tags: HashSet<String, RandomState> =
+      tags.iter().map(String::from).collect();
+    self.tags = format!(
+      ",{},",
+      tags.iter().map(String::from).collect::<Vec<_>>().join(","),
+    );
+  }
+  pub fn add_tags(&mut self, tags: &[String]) {
+    let mut new_tags = self.get_tags();
+    for tag in tags {
+      new_tags.push(tag.to_owned());
+    }
+    self.set_tags(&new_tags);
+  }
+  pub fn remove_tags(&mut self, tags: &[String]) {
+    let cur_tags = self.get_tags();
+    let mut new_tags = Vec::new();
+
+    for tag in cur_tags {
+      if !tags.contains(&tag) {
+        new_tags.push(tag)
+      }
+    }
+    self.set_tags(&new_tags);
+  }
+  pub fn get_comma_tags(&self) -> Vec<String> {
+    self.get_tags().iter().map(|v| format!(",{},", v)).collect()
   }
 }
 
