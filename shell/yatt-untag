@@ -1,0 +1,35 @@
+#!/bin/sh
+id_cmd=${0%yatt-untag}yatt-id
+
+usage () {
+  echo "\
+Untags yatt's selected task.
+By default, 'fzf' is used, but you can change it by setting \
+YATT_FZF environment variable value.
+
+USAGE:
+	$0 [TAGS]
+
+ARGUMENTS:
+	TAGS          Comma separated tags list (will be prompted if omitted)
+
+FLAGS:
+	-h, --help    Show this message
+"
+	exit 0
+}
+
+[ "$1" == "--help" ] && usage
+[ "$1" == "-h" ] && usage
+
+tags=$1
+[ "$tags" != "--help" ] || usage
+[ "$tags" != "-h" ] || usage
+
+id=$($id_cmd task)
+[ -z "$tags" ] && read -p "tags: " tags
+[ -z "$tags" ] && echo "no tags provided" && exit 1
+
+[ -z "$id" ] && exit 0
+
+yatt untag $id $tags
