@@ -62,7 +62,13 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
       node: node_data,
     });
     let input = input();
-    if input.read_char()?.to_lowercase().to_string() != "y" {
+    if input
+      .read_char()
+      .map_err(|e| CliError::wrap(Box::new(e)))
+      .unwrap_or_default()
+      .to_string()
+      != "y"
+    {
       ctx.printer.cmd("Cancelled...");
       return Ok(());
     }

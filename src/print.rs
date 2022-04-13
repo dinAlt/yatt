@@ -87,7 +87,7 @@ impl Printer for TermPrinter {
     print_node_info(&d.node, &self.style.task)
   }
   fn error(&self, e: &str) {
-    println!("Error: {}", &self.style.error.apply_to(e));
+    println!("Error: {}", &self.style.error.apply(e));
   }
   fn interval_error(&self, d: &IntervalData, e: &str) {
     self.error(e);
@@ -95,7 +95,7 @@ impl Printer for TermPrinter {
     print_interval_info(d, &self.style.task);
   }
   fn cmd(&self, d: &str) {
-    println!("{}", &self.style.cmd.apply_to(d));
+    println!("{}", &self.style.cmd.apply(d));
   }
   fn report(&self, r: &Report) {
     println!(
@@ -131,12 +131,12 @@ fn print_task_list(
 ) {
   for task in d {
     let last = task.last().unwrap();
-    print!("[{}] ", s.id.apply_to(last.id));
+    print!("[{}] ", s.id.apply(last.id));
     for (i, t) in task.iter().enumerate() {
       if i > 0 {
         print!(" > ");
       }
-      print!("{}", s.name.apply_to(&t.label));
+      print!("{}", s.name.apply(&t.label));
     }
     println!(" {} ", format_datetime(&last.created));
   }
@@ -150,10 +150,10 @@ fn print_intervals_list(
     if i.end.is_some() {
       println!(
         "[{}] {} - {} task id: {}",
-        s.id.apply_to(i.id),
-        s.name.apply_to(format_datetime(&i.begin)),
-        s.name.apply_to(format_datetime(&i.end.unwrap())),
-        s.name.apply_to(i.node_id.unwrap()),
+        s.id.apply(i.id),
+        s.name.apply(format_datetime(&i.begin)),
+        s.name.apply(format_datetime(&i.end.unwrap())),
+        s.name.apply(i.node_id.unwrap()),
       );
     }
   }
@@ -163,7 +163,7 @@ fn print_interval_info(d: &IntervalData, s: &TaskStyle) {
   println!("{}", d.title);
   print!("  Task: ");
   for (i, t) in d.task.iter().enumerate() {
-    print!("{}", s.name.apply_to(&t.label));
+    print!("{}", s.name.apply(&t.label));
     if i < d.task.len() - 1 {
       print!(" > ");
     }
@@ -171,27 +171,21 @@ fn print_interval_info(d: &IntervalData, s: &TaskStyle) {
   println!();
   print!(
     "  Started: {}",
-    s.start_time.apply_to(format_datetime(&d.interval.begin))
+    s.start_time.apply(format_datetime(&d.interval.begin))
   );
 
   let dur = Utc::now() - d.interval.begin;
 
   if dur.num_seconds() > 2 {
-    print!(" ({} ago)", s.time_span.apply_to(format_duration(&dur)));
+    print!(" ({} ago)", s.time_span.apply(format_duration(&dur)));
   }
 
   if d.interval.end.is_some() {
     let e = d.interval.end.unwrap();
-    print!(
-      "\n  Stopped: {}",
-      s.end_time.apply_to(format_datetime(&e))
-    );
+    print!("\n  Stopped: {}", s.end_time.apply(format_datetime(&e)));
     let dur = Utc::now() - e;
     if dur.num_seconds() > 2 {
-      print!(
-        " ({} ago)",
-        s.time_span.apply_to(format_duration(&dur))
-      );
+      print!(" ({} ago)", s.time_span.apply(format_duration(&dur)));
     }
   }
 
@@ -202,7 +196,7 @@ fn print_node_info(d: &NodeData, s: &TaskStyle) {
   println!("{}", d.title);
   print!("  Task: ");
   for (i, t) in d.node.iter().enumerate() {
-    print!("{}", s.name.apply_to(&t.label));
+    print!("{}", s.name.apply(&t.label));
     if i < d.node.len() - 1 {
       print!(" > ");
     }
@@ -211,7 +205,7 @@ fn print_node_info(d: &NodeData, s: &TaskStyle) {
   let last = d.node.last().unwrap();
   print!(
     "  Created: {}",
-    s.created_time.apply_to(format_datetime(&last.created))
+    s.created_time.apply(format_datetime(&last.created))
   );
   println!();
   if !last.tags.is_empty() {

@@ -1,23 +1,38 @@
-use crossterm_style::{Color, ObjectStyle};
+use crossterm::style::{Color, ContentStyle};
 use std::convert::TryInto;
 use termimad::*;
 
 #[derive(Clone)]
 pub struct TaskStyle {
-  pub name: ObjectStyle,
-  pub start_time: ObjectStyle,
-  pub end_time: ObjectStyle,
-  pub created_time: ObjectStyle,
-  pub time_span: ObjectStyle,
+  pub name: ContentStyle,
+  pub start_time: ContentStyle,
+  pub end_time: ContentStyle,
+  pub created_time: ContentStyle,
+  pub time_span: ContentStyle,
 }
 
 impl Default for TaskStyle {
   fn default() -> Self {
-    let name = ObjectStyle::default().fg(Color::Yellow);
-    let start_time = ObjectStyle::default().fg(Color::Magenta);
-    let end_time = ObjectStyle::default().fg(Color::Magenta);
-    let created_time = ObjectStyle::default().fg(Color::Blue);
-    let time_span = ObjectStyle::default().fg(Color::Green);
+    let name = ContentStyle {
+      foreground_color: Some(Color::Yellow),
+      ..Default::default()
+    };
+    let start_time = ContentStyle {
+      foreground_color: Some(Color::Magenta),
+      ..Default::default()
+    };
+    let end_time = ContentStyle {
+      foreground_color: Some(Color::Magenta),
+      ..Default::default()
+    };
+    let created_time = ContentStyle {
+      foreground_color: Some(Color::Blue),
+      ..Default::default()
+    };
+    let time_span = ContentStyle {
+      foreground_color: Some(Color::Green),
+      ..Default::default()
+    };
 
     TaskStyle {
       name,
@@ -31,29 +46,38 @@ impl Default for TaskStyle {
 
 impl TaskStyle {
   pub(crate) fn empty() -> Self {
-    let style = ObjectStyle::default();
+    let style = ContentStyle::default();
 
     TaskStyle {
-      name: style.clone(),
-      start_time: style.clone(),
-      end_time: style.clone(),
-      created_time: style.clone(),
+      name: style,
+      start_time: style,
+      end_time: style,
+      created_time: style,
       time_span: style,
     }
   }
 }
 
 pub struct TaskListStyle {
-  pub name: ObjectStyle,
-  pub create_date: ObjectStyle,
-  pub id: ObjectStyle,
+  pub name: ContentStyle,
+  pub create_date: ContentStyle,
+  pub id: ContentStyle,
 }
 
 impl Default for TaskListStyle {
   fn default() -> Self {
-    let name = ObjectStyle::default().fg(Color::Yellow);
-    let create_date = ObjectStyle::default().fg(Color::Magenta);
-    let id = ObjectStyle::default().fg(Color::Green);
+    let name = ContentStyle {
+      foreground_color: Some(Color::Yellow),
+      ..Default::default()
+    };
+    let create_date = ContentStyle {
+      foreground_color: Some(Color::Magenta),
+      ..Default::default()
+    };
+    let id = ContentStyle {
+      foreground_color: Some(Color::Green),
+      ..Default::default()
+    };
 
     TaskListStyle {
       name,
@@ -65,11 +89,11 @@ impl Default for TaskListStyle {
 
 impl TaskListStyle {
   pub(crate) fn empty() -> Self {
-    let style = ObjectStyle::default();
+    let style = ContentStyle::default();
 
     TaskListStyle {
-      name: style.clone(),
-      create_date: style.clone(),
+      name: style,
+      create_date: style,
       id: style,
     }
   }
@@ -77,8 +101,8 @@ impl TaskListStyle {
 
 pub struct AppStyle {
   pub task: TaskStyle,
-  pub error: ObjectStyle,
-  pub cmd: ObjectStyle,
+  pub error: ContentStyle,
+  pub cmd: ContentStyle,
   pub report: MadSkin,
   pub task_list: TaskListStyle,
   pub screen_width: Option<usize>,
@@ -86,7 +110,7 @@ pub struct AppStyle {
 
 impl Default for AppStyle {
   fn default() -> Self {
-    let cmd = ObjectStyle::default();
+    let cmd = ContentStyle::default();
     let (width, _) = terminal_size();
     let area: Option<usize> = if width < 4 {
       Some(120)
@@ -97,14 +121,17 @@ impl Default for AppStyle {
     report.paragraph.align = Alignment::Center;
     report.table.align = Alignment::Center;
     report.bold.set_fg(Color::Yellow);
-    report.italic.object_style = ObjectStyle::default();
+    report.italic.object_style = Default::default();
     report.italic.set_fg(Color::Magenta);
     report.inline_code.set_fgbg(Color::Reset, Color::Reset);
 
     AppStyle {
       task: TaskStyle::default(),
       task_list: TaskListStyle::default(),
-      error: ObjectStyle::default().fg(Color::Red),
+      error: ContentStyle {
+        foreground_color: Some(Color::Red),
+        ..Default::default()
+      },
       cmd,
       report,
       screen_width: area,
@@ -115,13 +142,6 @@ impl Default for AppStyle {
 impl AppStyle {
   pub(crate) fn empty() -> Self {
     let report = MadSkin {
-      paragraph: Default::default(),
-      bold: Default::default(),
-      italic: Default::default(),
-      strikeout: Default::default(),
-      inline_code: Default::default(),
-      code_block: Default::default(),
-      headers: Default::default(),
       scrollbar: ScrollBarStyle {
         track: StyledChar::new(Default::default(), ' '),
         thumb: StyledChar::new(Default::default(), ' '),
@@ -132,10 +152,11 @@ impl AppStyle {
       },
       bullet: StyledChar::new(Default::default(), '.'),
       quote_mark: StyledChar::new(
-        CompoundStyle::new(None, None, vec![]),
+        CompoundStyle::new(None, None, Default::default()),
         '|',
       ),
       horizontal_rule: StyledChar::new(Default::default(), '―'),
+      ..Default::default()
     };
 
     AppStyle {
