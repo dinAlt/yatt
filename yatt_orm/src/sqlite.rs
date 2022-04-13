@@ -3,8 +3,8 @@ use std::convert::TryFrom;
 use std::path::Path;
 
 pub use rusqlite::{
-  types::ValueRef, Connection, Result as SQLITEResult,
-  Statement as SQLITEStatement, ToSql, Transaction, NO_PARAMS,
+  types::ValueRef, Connection, Params, Result as SQLITEResult,
+  Statement as SQLITEStatement, ToSql, Transaction,
 };
 
 use crate::errors::*;
@@ -26,8 +26,7 @@ impl DBRunner<'_> {
   }
   fn execute<P>(&self, sql: &str, params: P) -> SQLITEResult<usize>
   where
-    P: IntoIterator,
-    P::Item: ToSql,
+    P: Params,
   {
     match self {
       DBRunner::Connection(c) => c.execute(sql, params),
@@ -98,7 +97,7 @@ impl<'a> DB<'a> {
       .map_err(|e| DBError::wrap(Box::new(e)))?;
 
     let mut rows =
-      q.query(NO_PARAMS).map_err(|e| DBError::wrap(Box::new(e)))?;
+      q.query([]).map_err(|e| DBError::wrap(Box::new(e)))?;
     let mut res = Vec::new();
     while let Some(r) =
       rows.next().map_err(|e| DBError::wrap(Box::new(e)))?
@@ -106,7 +105,7 @@ impl<'a> DB<'a> {
       let mut strct = T::default();
       for (n, fld_name) in strct.get_fields_list().iter().enumerate()
       {
-        let v = r.get_raw(n);
+        let v = r.get_ref_unwrap(n);
         let v: FieldVal = match v {
           ValueRef::Integer(vv) => vv.into(),
           ValueRef::Null => FieldVal::Null,
@@ -155,7 +154,7 @@ impl Storage for DB<'_> {
             }
             FieldVal::Bool(v) => Box::new(v),
             FieldVal::String(v) => Box::new(v),
-            FieldVal::DateTime(v) => Box::new(v),
+            FieldVal::DateTime(v) => Box::new(v.to_rfc3339()),
             FieldVal::F64(v) => Box::new(v),
             FieldVal::I64(v) => Box::new(v),
             FieldVal::U8Vec(v) => Box::new(v),
@@ -199,9 +198,12 @@ impl Storage for DB<'_> {
           .join(", ")
       )
     };
+
+    let params: Vec<&dyn ToSql> =
+      params.iter().map(|p| p.as_ref()).collect();
     self
       .con
-      .execute(&sql, params)
+      .execute(&sql, &*params)
       .map_err(|e| DBError::wrap(Box::new(e)))?;
 
     if id > 0 {
@@ -232,7 +234,7 @@ impl Storage for DB<'_> {
     );
     self
       .con
-      .execute(&q, NO_PARAMS)
+      .execute(&q, [])
       .map_err(|e| DBError::wrap(Box::new(e)))
   }
   fn get_by_statement<T: StoreObject>(

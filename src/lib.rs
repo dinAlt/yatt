@@ -28,7 +28,7 @@ pub(crate) use format::*;
 use history::DBWatcher;
 pub use print::*;
 pub(crate) use style::*;
-use yatt_orm::sqlite::{DB, NO_PARAMS};
+use yatt_orm::sqlite::DB;
 
 pub struct CrateInfo<'a> {
   pub name: &'a str,
@@ -120,9 +120,7 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
 
   let mut db = DB::new(base_path.join(&conf.db_path), |con| {
     let db_ver =
-      con.query_row("select version from version", NO_PARAMS, |r| {
-        r.get(0)
-      });
+      con.query_row("select version from version", [], |r| r.get(0));
     let db_ver = match db_ver {
       Ok(ver) => Ok(ver),
       Err(e) => {
@@ -136,13 +134,11 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
     let db_ver = if db_ver.is_empty() {
       con.execute(
         "create table version (version TEXT NOT NULL)",
-        NO_PARAMS,
+        [],
       )?;
-      con.execute("insert into version values ('0')", NO_PARAMS)?;
+      con.execute("insert into version values ('0')", [])?;
       if con
-        .query_row("select id from nodes limit 1", NO_PARAMS, |_| {
-          Ok(())
-        })
+        .query_row("select id from nodes limit 1", [], |_| Ok(()))
         .is_err()
       {
         con.execute(
@@ -154,7 +150,7 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
             closed INTEGER DEFAULT 0,
             deleted integer default 0
             )",
-          NO_PARAMS,
+          [],
         )?;
         con.execute(
           "create table intervals (
@@ -165,7 +161,7 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
              deleted integer default 0,
              closed integer default 0
              )",
-          NO_PARAMS,
+          [],
         )?;
       };
       String::from("0.0.0")
@@ -176,7 +172,7 @@ pub fn run(info: CrateInfo) -> CliResult<()> {
     if db_ver == "0.0.0" {
       con.execute(
         "alter table nodes add column tags TEXT NOT NULL DEFAULT ''",
-        NO_PARAMS,
+        [],
       )?;
     }
     let db_sem_ver = Version::parse(&db_ver).unwrap();

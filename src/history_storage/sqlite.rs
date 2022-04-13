@@ -2,9 +2,7 @@ use std::convert::TryFrom;
 use std::path::Path;
 use std::rc::Rc;
 
-use rusqlite::{
-  params, Connection, Result as SQLITEResult, NO_PARAMS,
-};
+use rusqlite::{params, Connection, Result as SQLITEResult};
 use uuid::Uuid;
 
 use yatt_orm::{DBError, DBResult, HistoryRecord, HistoryStorage};
@@ -35,7 +33,7 @@ impl DB {
             entyty_type INTEGER NOT NULL,
             entity_id INTEGER NOT NULL
             )",
-      NO_PARAMS,
+      [],
     )?;
 
     Ok(())
