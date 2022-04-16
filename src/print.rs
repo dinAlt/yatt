@@ -59,7 +59,7 @@ pub trait Printer {
   fn node_cmd(&self, d: &NodeCmdData);
   fn error(&self, e: &str);
   fn interval_error(&self, d: &IntervalData, e: &str);
-  fn cmd(&self, d: &str);
+  fn plain(&self, d: &str);
   fn report(&self, r: &Report);
   fn prompt(&self, p: &str);
   fn task_list(&self, tasks: impl Iterator<Item = Vec<Node>>);
@@ -77,25 +77,29 @@ pub struct TermPrinter {
 
 impl Printer for TermPrinter {
   fn interval_cmd(&self, d: &IntervalCmdData) {
-    self.cmd(d.cmd_text);
+    self.plain(d.cmd_text);
     println!();
-    print_interval_info(&d.interval, &self.style.task);
+    print_interval_info(&d.interval, &self.style);
   }
   fn node_cmd(&self, d: &NodeCmdData) {
-    self.cmd(d.cmd_text);
+    self.plain(d.cmd_text);
     println!();
-    print_node_info(&d.node, &self.style.task)
+    print_node_info(&d.node, &self.style)
   }
   fn error(&self, e: &str) {
-    println!("Error: {}", &self.style.error.apply(e));
+    println!(
+      "{} {}",
+      &self.style.plain.apply("Error:"),
+      &self.style.error.apply(e)
+    );
   }
   fn interval_error(&self, d: &IntervalData, e: &str) {
     self.error(e);
     println!();
-    print_interval_info(d, &self.style.task);
+    print_interval_info(d, &self.style);
   }
-  fn cmd(&self, d: &str) {
-    println!("{}", &self.style.cmd.apply(d));
+  fn plain(&self, d: &str) {
+    println!("{}", &self.style.plain.apply(d));
   }
   fn report(&self, r: &Report) {
     println!(
@@ -110,10 +114,10 @@ impl Printer for TermPrinter {
     println!("{}", p);
   }
   fn task_list(&self, tasks: impl Iterator<Item = Vec<Node>>) {
-    print_task_list(tasks, &self.style.task_list);
+    print_task_list(tasks, &self.style);
   }
   fn interval_list(&self, intervals: impl Iterator<Item = Interval>) {
-    print_intervals_list(intervals, &self.style.task_list);
+    print_intervals_list(intervals, &self.style);
   }
 }
 
@@ -123,100 +127,140 @@ impl TermPrinter {
       style: AppStyle::empty(),
     }
   }
+  pub(crate) fn new(colors: &Colors) -> Self {
+    TermPrinter {
+      style: AppStyle::new(colors),
+    }
+  }
 }
 
-fn print_task_list(
-  d: impl Iterator<Item = Vec<Node>>,
-  s: &TaskListStyle,
-) {
+fn print_task_list(d: impl Iterator<Item = Vec<Node>>, s: &AppStyle) {
+  let plain = &s.plain;
+  let s = &s.task_list;
   for task in d {
     let last = task.last().unwrap();
-    print!("[{}] ", s.id.apply(last.id));
+    print!(
+      "{}{}{} ",
+      plain.apply('['),
+      s.id.apply(last.id),
+      plain.apply(']')
+    );
     for (i, t) in task.iter().enumerate() {
       if i > 0 {
-        print!(" > ");
+        print!(" {} ", plain.apply('>'));
       }
       print!("{}", s.name.apply(&t.label));
     }
-    println!(" {} ", format_datetime(&last.created));
+    println!(" {} ", plain.apply(format_datetime(&last.created)));
   }
 }
 
 fn print_intervals_list(
   d: impl Iterator<Item = Interval>,
-  s: &TaskListStyle,
+  s: &AppStyle,
 ) {
+  let plain = &s.plain;
+  let s = &s.task_list;
   for i in d {
     if i.end.is_some() {
       println!(
-        "[{}] {} - {} task id: {}",
+        "{}{}{} {} {} {} {} {}",
+        plain.apply('['),
         s.id.apply(i.id),
+        plain.apply(']'),
         s.name.apply(format_datetime(&i.begin)),
+        plain.apply('-'),
         s.name.apply(format_datetime(&i.end.unwrap())),
+        plain.apply("task id:"),
         s.name.apply(i.node_id.unwrap()),
       );
     }
   }
 }
 
-fn print_interval_info(d: &IntervalData, s: &TaskStyle) {
-  println!("{}", d.title);
-  print!("  Task: ");
+fn print_interval_info(d: &IntervalData, s: &AppStyle) {
+  let plain = &s.plain;
+  let s = &s.task;
+  println!("{}", plain.apply(d.title));
+  print!("  {} ", plain.apply("Task:"));
   for (i, t) in d.task.iter().enumerate() {
     print!("{}", s.name.apply(&t.label));
     if i < d.task.len() - 1 {
-      print!(" > ");
+      print!(" {} ", plain.apply('>'));
     }
   }
   println!();
   print!(
-    "  Started: {}",
+    "  {} {}",
+    plain.apply("Started:"),
     s.start_time.apply(format_datetime(&d.interval.begin))
   );
 
   let dur = Utc::now() - d.interval.begin;
 
   if dur.num_seconds() > 2 {
-    print!(" ({} ago)", s.time_span.apply(format_duration(&dur)));
+    print!(
+      " {}{} {}{}",
+      plain.apply('('),
+      s.time_span.apply(format_duration(&dur)),
+      plain.apply("ago"),
+      plain.apply(')')
+    );
   }
 
   if d.interval.end.is_some() {
     let e = d.interval.end.unwrap();
-    print!("\n  Stopped: {}", s.end_time.apply(format_datetime(&e)));
+    print!(
+      "\n  {} {}",
+      plain.apply("Stopped:"),
+      s.end_time.apply(format_datetime(&e))
+    );
     let dur = Utc::now() - e;
     if dur.num_seconds() > 2 {
-      print!(" ({} ago)", s.time_span.apply(format_duration(&dur)));
+      print!(
+        " {}{} {}{}",
+        plain.apply('('),
+        s.time_span.apply(format_duration(&dur)),
+        plain.apply("ago"),
+        plain.apply(')')
+      );
     }
   }
 
   println!();
 }
 
-fn print_node_info(d: &NodeData, s: &TaskStyle) {
-  println!("{}", d.title);
-  print!("  Task: ");
+fn print_node_info(d: &NodeData, s: &AppStyle) {
+  let plain = &s.plain;
+  let s = &s.task;
+  println!("{}", plain.apply(d.title));
+  print!("  {} ", plain.apply("Task:"));
   for (i, t) in d.node.iter().enumerate() {
     print!("{}", s.name.apply(&t.label));
     if i < d.node.len() - 1 {
-      print!(" > ");
+      print!(" {} ", plain.apply('>'));
     }
   }
   println!();
   let last = d.node.last().unwrap();
   print!(
-    "  Created: {}",
+    "  {} {}",
+    plain.apply("Created:"),
     s.created_time.apply(format_datetime(&last.created))
   );
   println!();
   if !last.tags.is_empty() {
     print!(
-      "  Tags: {}",
-      last
-        .tags
-        .trim_matches(',')
-        .split(',')
-        .collect::<Vec<_>>()
-        .join(", ")
+      "  {} {}",
+      plain.apply("Tags:"),
+      s.tags.apply(
+        last
+          .tags
+          .trim_matches(',')
+          .split(',')
+          .collect::<Vec<_>>()
+          .join(", ")
+      )
     );
   }
   println!();

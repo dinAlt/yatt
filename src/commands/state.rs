@@ -33,7 +33,7 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         },
       });
     } else {
-      ctx.printer.cmd(cmd_text);
+      ctx.printer.plain(cmd_text);
     }
   };
 

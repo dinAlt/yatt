@@ -81,8 +81,15 @@ fn make_args<'a>(info: &CrateInfo<'a>) -> ArgMatches<'a> {
     .about(info.description)
     .arg(
       Arg::with_name("no-color")
+        .long("no-color")
         .help("Unstyled output")
         .short("c"),
+    )
+    .arg(
+      Arg::with_name("theme")
+        .help("colon separated colors list (up to 5 values)")
+        .takes_value(true)
+        .long("theme"),
     )
     .setting(AppSettings::ArgRequiredElseHelp);
 
@@ -219,6 +226,14 @@ fn run_app<T: DBRoot>(
   let args = make_args(info);
   let printer = if args.is_present("no-color") {
     TermPrinter::unstyled()
+  } else if let Some(theme) = args.value_of("theme") {
+    match Colors::try_from(theme) {
+      Err(e) => {
+        println!("Error: {}", e);
+        return Err(e);
+      }
+      Ok(c) => TermPrinter::new(&c),
+    }
   } else {
     TermPrinter::default()
   };

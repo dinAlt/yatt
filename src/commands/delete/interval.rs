@@ -88,9 +88,9 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
         .db
         .save(&interval)
         .map_err(|source| CliError::DB { source })?;
-      ctx.printer.cmd("Successfully deleted...")
+      ctx.printer.plain("Successfully deleted...")
     } else {
-      ctx.printer.cmd("Cancelled...")
+      ctx.printer.plain("Cancelled...")
     }
   }
 

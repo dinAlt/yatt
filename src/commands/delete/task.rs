@@ -69,13 +69,13 @@ pub(crate) fn exec<T: DBRoot, P: Printer>(
       .to_string()
       != "y"
     {
-      ctx.printer.cmd("Cancelled...");
+      ctx.printer.plain("Cancelled...");
       return Ok(());
     }
   }
 
   ctx.db.remove_node(task.id)?;
-  ctx.printer.cmd("Successfully deleted...");
+  ctx.printer.plain("Successfully deleted...");
 
   Ok(())
 }
