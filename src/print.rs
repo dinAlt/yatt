@@ -127,7 +127,7 @@ impl TermPrinter {
       style: AppStyle::empty(),
     }
   }
-  pub(crate) fn new(colors: &Colors) -> Self {
+  pub(crate) fn new(colors: &Theme) -> Self {
     TermPrinter {
       style: AppStyle::new(colors),
     }

@@ -87,7 +87,28 @@ fn make_args<'a>(info: &CrateInfo<'a>) -> ArgMatches<'a> {
     )
     .arg(
       Arg::with_name("theme")
-        .help("colon separated colors list (up to 5 values)")
+        .help("theme name or inline color list")
+        .long_help(
+          r#"This parameter takes one of installed theme name,
+or inline color list (up to 5 colors) to override defaults.
+Inline value should starts with "inline:", followed by
+colon separated colors in hex, ansi (in rgb or 256 colors 
+format) format. This color aliases also allowed: black,
+dark_grey, red dark_red, green, dark_green, yellow, dark_yellow,
+blue, dark_blue, magenta, dark_magenta, cyan, dark_cyan, white,
+grey.
+
+Examples:
+  use gruvbox-dark-hard theme (should be installed):
+    yatt --theme gruvbox-dark-hard state
+  inline colors with hex values:
+    yatt --theme 'inline:#ff0000:#00ff00:#0000ff' state
+  inline colors with ansi values:
+    yatt --theme 'inline:5;40:5;30:5;70:2;255;0;0:2;255;0;0' state
+  inline colors with aliases:
+    yatt --theme 'inline:red:green:blue:yellow:white' state
+    "#,
+        )
         .takes_value(true)
         .long("theme"),
     )
@@ -227,7 +248,7 @@ fn run_app<T: DBRoot>(
   let printer = if args.is_present("no-color") {
     TermPrinter::unstyled()
   } else if let Some(theme) = args.value_of("theme") {
-    match Colors::try_from(theme) {
+    match load_theme(theme, &base_path.join("themes")) {
       Err(e) => {
         println!("Error: {}", e);
         return Err(e);
@@ -250,6 +271,24 @@ fn run_app<T: DBRoot>(
   }
 
   res
+}
+
+fn load_theme(theme: &str, themes_dir: &Path) -> CliResult<Theme> {
+  if theme.starts_with("inline:") {
+    Theme::try_from(theme.trim_start_matches("inline:"))
+  } else {
+    let pth = themes_dir.join(theme);
+    if !pth.exists() || !pth.is_file() {
+      return Err(CliError::Cmd {
+        message: format!("theme not found: \"{}\"", theme),
+      });
+    }
+
+    let theme = fs::read_to_string(pth)
+      .map_err(|source| CliError::wrap(Box::new(source)))?;
+
+    Theme::try_from(theme.as_str().trim())
+  }
 }
 
 fn print_error<T: Printer>(e: &CliError, p: &T) {

@@ -6,16 +6,16 @@ use termimad::*;
 use crate::errors::{CliError, CliResult};
 
 #[derive(Clone, Debug)]
-pub struct Colors {
+pub struct Theme {
   pub c1: Color,
   pub c2: Color,
   pub c3: Color,
   pub c4: Color,
   pub c5: Color,
 }
-impl Default for Colors {
+impl Default for Theme {
   fn default() -> Self {
-    Colors {
+    Theme {
       c1: Color::Yellow,
       c2: Color::Magenta,
       c3: Color::Green,
@@ -25,14 +25,14 @@ impl Default for Colors {
   }
 }
 
-impl TryFrom<&str> for Colors {
+impl TryFrom<&str> for Theme {
   type Error = CliError;
 
   fn try_from(v: &str) -> Result<Self, Self::Error> {
     if v.is_empty() {
       Ok(Default::default())
     } else {
-      let mut res: Colors = Default::default();
+      let mut res: Theme = Default::default();
       for (idx, s) in
         v.split(':').filter(|v| !v.is_empty()).enumerate()
       {
@@ -94,7 +94,7 @@ impl Default for TaskStyle {
 }
 
 impl TaskStyle {
-  pub(crate) fn new(colors: &Colors) -> Self {
+  pub(crate) fn new(colors: &Theme) -> Self {
     let default = ContentStyle {
       foreground_color: Some(colors.c5),
       ..Default::default()
@@ -163,7 +163,7 @@ impl Default for TaskListStyle {
 }
 
 impl TaskListStyle {
-  pub(crate) fn new(colors: &Colors) -> Self {
+  pub(crate) fn new(colors: &Theme) -> Self {
     let name = ContentStyle {
       foreground_color: Some(colors.c1),
       ..Default::default()
@@ -210,7 +210,7 @@ impl Default for AppStyle {
 }
 
 impl AppStyle {
-  pub(crate) fn new(colors: &Colors) -> Self {
+  pub(crate) fn new(colors: &Theme) -> Self {
     let plain = ContentStyle {
       foreground_color: Some(colors.c5),
       ..Default::default()
