@@ -1,6 +1,6 @@
 use core::result::Result;
 use crossterm::style::{Color, ContentStyle};
-use std::convert::TryInto;
+use std::{convert::TryInto, num::ParseIntError};
 use termimad::*;
 
 use crate::errors::{CliError, CliResult};
@@ -52,6 +52,11 @@ impl TryFrom<&str> for Colors {
 }
 
 fn parse_color(v: &str) -> CliResult<Color> {
+  if v.starts_with('#') && v.len() == 7 {
+    if let Ok(c) = parse_hex_color(v) {
+      return Ok(c);
+    }
+  }
   let c = Color::try_from(v);
   if let Ok(c) = c {
     return Ok(c);
@@ -62,6 +67,13 @@ fn parse_color(v: &str) -> CliResult<Color> {
   Err(CliError::Parse {
     message: format!("unable to parse colors from \"{}\"", v),
   })
+}
+
+fn parse_hex_color(v: &str) -> Result<Color, ParseIntError> {
+  let r: u8 = u8::from_str_radix(&v[1..3], 16)?;
+  let g: u8 = u8::from_str_radix(&v[3..5], 16)?;
+  let b: u8 = u8::from_str_radix(&v[5..7], 16)?;
+  Ok((r, g, b).into())
 }
 
 #[derive(Clone)]
