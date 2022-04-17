@@ -1,11 +1,10 @@
 [package]
 authors = ["dinAlt <dinalt2@gmail.com>"]
-categories = ["command-line-utilities"]
-description = "Yet Another Task Tracker"
+description = "Yatt core crate"
 edition = "2021"
 license = "MIT"
-name = "yatt"
-repository = "https://github.com/dinAlt/yatt"
+name = "yatt_core"
+repository = "https://github.com/dinAlt/yatt_core"
 version = "0.11.1"
 
 [dependencies]
@@ -19,27 +18,10 @@ dirs = "2.0"
 lazy_static = "1.4"
 regex = "1.2"
 rusqlite = {version = "0.27.0", default-features = false, features = ["chrono", "bundled"]}
+semver = "1.0.7"
 serde = "1.0"
 serde_derive = "1.0"
 termimad = "0.20.1"
 trees = "0.3"
 uuid = {version = "0.8", features = ["serde", "v4"]}
-yatt_orm = {version = "0.5.1", path = "yatt_orm"}
-yatt_core = {version ="0.11.1", path = "yatt_core"}
-semver = "1.0.7"
-
-[workspace]
-members = [
-  "yatt_orm",
-  "yatt_orm/yatt_orm_derive",
-  "yatt_core",
-]
-
-[profile.dev]
-incremental = true
-
-[profile.release]
-codegen-units = 4
-lto = true
-opt-level = "s"
-panic = "abort"
+yatt_orm = {version = "0.5.1", path = "../yatt_orm"}
