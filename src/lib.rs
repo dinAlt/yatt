@@ -13,7 +13,7 @@ use config::{Config, File};
 use semver::Version;
 
 mod commands;
-pub mod core;
+mod core;
 pub mod errors;
 mod format;
 mod history;

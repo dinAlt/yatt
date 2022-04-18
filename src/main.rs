@@ -1,9 +1,8 @@
-use yatt_core::{errors::*, *};
-
 #[macro_use]
 extern crate clap;
 
 use std::process::exit;
+use yatt::{errors::*, *};
 fn main() {
   if let Err(err) = run(CrateInfo {
     name: crate_name!(),

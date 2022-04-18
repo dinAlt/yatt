@@ -10,7 +10,7 @@ version = "0.11.1"
 
 [dependencies]
 chrono = "0.4.7"
-clap = "2.33.3"
+clap = "2.33"
 config = "0.9"
 crossterm = "0.22.1"
 crossterm_input = "0.5"
@@ -25,14 +25,12 @@ termimad = "0.20.1"
 trees = "0.3"
 uuid = {version = "0.8", features = ["serde", "v4"]}
 yatt_orm = {version = "0.5.1", path = "yatt_orm"}
-yatt_core = {version ="0.11.1", path = "yatt_core"}
 semver = "1.0.7"
 
 [workspace]
 members = [
   "yatt_orm",
   "yatt_orm/yatt_orm_derive",
-  "yatt_core",
 ]
 
 [profile.dev]
