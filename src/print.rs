@@ -54,6 +54,11 @@ pub struct IntervalError<'a> {
   pub interval: IntervalData<'a>,
 }
 
+pub struct ThemeData {
+  pub title: String,
+  pub theme: Theme,
+}
+
 pub trait Printer {
   fn interval_cmd(&self, d: &IntervalCmdData);
   fn node_cmd(&self, d: &NodeCmdData);
@@ -64,6 +69,7 @@ pub trait Printer {
   fn prompt(&self, p: &str);
   fn task_list(&self, tasks: impl Iterator<Item = Vec<Node>>);
   fn interval_list(&self, intervals: impl Iterator<Item = Interval>);
+  fn theme_list(&self, list: impl Iterator<Item = ThemeData>);
 }
 
 pub trait Markdown {
@@ -118,6 +124,9 @@ impl Printer for TermPrinter {
   }
   fn interval_list(&self, intervals: impl Iterator<Item = Interval>) {
     print_intervals_list(intervals, &self.style);
+  }
+  fn theme_list(&self, list: impl Iterator<Item = ThemeData>) {
+    print_theme_list(list);
   }
 }
 
@@ -264,4 +273,31 @@ fn print_node_info(d: &NodeData, s: &AppStyle) {
     );
   }
   println!();
+}
+
+fn print_theme_list(list: impl Iterator<Item = ThemeData>) {
+  let mut print_list: Vec<ThemeData> = list.collect();
+  if print_list.is_empty() {
+    return;
+  }
+
+  print_list.sort_by(|a, b| a.title.cmp(&b.title));
+  let title_max_len =
+    print_list.iter().map(|d| d.title.len()).max().unwrap();
+
+  for item in print_list {
+    let t = item.theme;
+    let pad = " ".repeat(title_max_len - item.title.len());
+
+    println!(
+      "   {}: {}{}{}{}{}{}",
+      item.title,
+      pad,
+      get_colored_style(t.c1).apply("▄▄▄"),
+      get_colored_style(t.c2).apply("▄▄▄"),
+      get_colored_style(t.c3).apply("▄▄▄"),
+      get_colored_style(t.c4).apply("▄▄▄"),
+      get_colored_style(t.c5).apply("▄▄▄"),
+    )
+  }
 }

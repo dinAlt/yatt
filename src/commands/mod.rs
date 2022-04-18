@@ -14,6 +14,7 @@ mod start;
 mod state;
 mod stop;
 mod tag;
+mod themes;
 mod truncate;
 mod untag;
 
@@ -36,6 +37,7 @@ pub fn exec<T: DBRoot, P: Printer>(
     ("merge", Some(m)) => merge::exec(ctx, m),
     ("tag", Some(m)) => tag::exec(ctx, m),
     ("untag", Some(m)) => untag::exec(ctx, m),
+    ("themes", Some(m)) => themes::exec(ctx, m),
     _ => root::exec(ctx, &ctx.args),
   }
 }
@@ -56,6 +58,7 @@ pub fn register<'a>(app: App<'a, 'a>) -> App {
   let app = merge::register(app);
   let app = tag::register(app);
   let app = untag::register(app);
+  let app = themes::register(app);
 
   delete::register(app)
 }

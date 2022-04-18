@@ -23,6 +23,9 @@ mod print;
 mod report;
 mod style;
 
+#[cfg(feature = "base16")]
+mod base16;
+
 use errors::*;
 pub(crate) use format::*;
 use history::DBWatcher;
@@ -245,6 +248,7 @@ fn run_app<T: DBRoot>(
   conf: AppConfig,
 ) -> CliResult<()> {
   let args = make_args(info);
+
   let printer = if args.is_present("no-color") {
     TermPrinter::unstyled()
   } else if let Some(theme) = args.value_of("theme") {
@@ -256,8 +260,16 @@ fn run_app<T: DBRoot>(
       Ok(c) => TermPrinter::new(&c),
     }
   } else {
-    TermPrinter::default()
+    let theme_path = base_path.join("current-theme");
+    if theme_path.is_file() {
+      let content = fs::read_to_string(theme_path).unwrap();
+      let theme = Theme::try_from(content.trim()).unwrap_or_default();
+      TermPrinter::new(&theme)
+    } else {
+      TermPrinter::default()
+    }
   };
+
   let app = AppContext {
     args,
     conf,
@@ -265,6 +277,7 @@ fn run_app<T: DBRoot>(
     printer,
     db,
   };
+
   let res = commands::exec(&app);
   if res.is_err() {
     print_error(res.as_ref().unwrap_err(), &app.printer);

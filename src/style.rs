@@ -25,6 +25,13 @@ impl Default for Theme {
   }
 }
 
+pub fn get_colored_style(c: Color) -> ContentStyle {
+  ContentStyle {
+    foreground_color: Some(c),
+    ..Default::default()
+  }
+}
+
 impl TryFrom<&str> for Theme {
   type Error = CliError;
 
@@ -51,6 +58,43 @@ impl TryFrom<&str> for Theme {
   }
 }
 
+impl From<Theme> for String {
+  fn from(t: Theme) -> Self {
+    format!(
+      "{}:{}:{}:{}:{}",
+      color_to_string(t.c1),
+      color_to_string(t.c2),
+      color_to_string(t.c3),
+      color_to_string(t.c4),
+      color_to_string(t.c5)
+    )
+  }
+}
+
+fn color_to_string(c: Color) -> String {
+  match c {
+    Color::Black => String::from("black"),
+    Color::DarkGrey => String::from("dark_grey"),
+    Color::Red => String::from("red"),
+    Color::DarkRed => String::from("dark_red"),
+    Color::Green => String::from("green"),
+    Color::DarkGreen => String::from("dark_green"),
+    Color::Yellow => String::from("yellow"),
+    Color::DarkYellow => String::from("dark_yellow"),
+    Color::Blue => String::from("blue"),
+    Color::DarkBlue => String::from("dark_blue"),
+    Color::Magenta => String::from("magenta"),
+    Color::DarkMagenta => String::from("dark_magenta"),
+    Color::Cyan => String::from("cyan"),
+    Color::DarkCyan => String::from("dark_cyan"),
+    Color::White => String::from("white"),
+    Color::Grey => String::from("grey"),
+    Color::Rgb { r, g, b } => format!("2;{};{};{}", r, g, b),
+    Color::AnsiValue(v) => format!("5;{}", v),
+    Color::Reset => panic!("Color::Reset is not serializable"),
+  }
+}
+
 fn parse_color(v: &str) -> CliResult<Color> {
   if v.starts_with('#') && v.len() == 7 {
     if let Ok(c) = parse_hex_color(v) {
@@ -69,7 +113,7 @@ fn parse_color(v: &str) -> CliResult<Color> {
   })
 }
 
-fn parse_hex_color(v: &str) -> Result<Color, ParseIntError> {
+pub fn parse_hex_color(v: &str) -> Result<Color, ParseIntError> {
   let r: u8 = u8::from_str_radix(&v[1..3], 16)?;
   let g: u8 = u8::from_str_radix(&v[3..5], 16)?;
   let b: u8 = u8::from_str_radix(&v[5..7], 16)?;
