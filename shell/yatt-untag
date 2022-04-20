@@ -1,5 +1,5 @@
 #!/bin/sh
-id_cmd=${0%yatt-untag}yatt-id
+id_cmd=${0%yatt-tag}"yatt-id -m"
 
 usage () {
   echo "\

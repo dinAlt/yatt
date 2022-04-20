@@ -88,8 +88,10 @@ impl Printer for TermPrinter {
     print_interval_info(&d.interval, &self.style);
   }
   fn node_cmd(&self, d: &NodeCmdData) {
-    self.plain(d.cmd_text);
-    println!();
+    if !d.cmd_text.is_empty() {
+      self.plain(d.cmd_text);
+      println!();
+    }
     print_node_info(&d.node, &self.style)
   }
   fn error(&self, e: &str) {
@@ -242,7 +244,9 @@ fn print_interval_info(d: &IntervalData, s: &AppStyle) {
 fn print_node_info(d: &NodeData, s: &AppStyle) {
   let plain = &s.plain;
   let s = &s.task;
-  println!("{}", plain.apply(d.title));
+  if !d.title.is_empty() {
+    println!("{}", plain.apply(d.title));
+  }
   print!("  {} ", plain.apply("Task:"));
   for (i, t) in d.node.iter().enumerate() {
     print!("{}", s.name.apply(&t.label));
