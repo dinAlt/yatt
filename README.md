@@ -25,5 +25,5 @@ cargo install --force yatt
 yatt help
 ```
 
-See olso [shell](/shell) to get useful shell helpers (requires [fzf](https://github.com/junegunn/fzf) or similar utility).
+See also [shell](/shell) to get useful shell helpers (requires [fzf](https://github.com/junegunn/fzf) or similar utility).
 
