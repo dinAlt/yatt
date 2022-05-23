@@ -1,0 +1,27 @@
+#!/bin/sh
+id_cmd=${0%yatt-rename}"yatt-id -m"
+
+usage () {
+  echo "\
+Interactive rename selected task.
+By default, 'fzf' is used, but you can change it by setting \
+YATT_FZF environment variable value.
+
+USAGE:
+	$0
+
+FLAGS:
+	-h, --help    Show this message
+"
+	exit 0
+}
+
+[ "$1" != "" ] && usage
+
+id=$($id_cmd task)
+[ -z "$id" ] && exit 0
+
+read -p "new name: " new_name
+[ -z "$new_name" ] && exit 0
+
+yatt rename $id $new_name
